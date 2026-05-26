@@ -41,7 +41,6 @@ const programs = [
     rating: 4.9,
     students: 12480,
     img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=400&fit=crop",
-    tag: "Best Seller",
     free: true,
     desc: "Build a consistent morning yoga habit with this 30-day progressive programme.",
   },
@@ -56,7 +55,6 @@ const programs = [
     rating: 4.8,
     students: 8320,
     img: "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?w=600&h=400&fit=crop",
-    tag: "Popular",
     free: false,
     desc: "Unlock deep tissue flexibility and emotional release.",
   },
@@ -71,39 +69,8 @@ const programs = [
     rating: 4.9,
     students: 5640,
     img: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&h=400&fit=crop",
-    tag: "Expert",
     free: false,
     desc: "Master the complete Ashtanga Primary Series.",
-  },
-  {
-    id: 4,
-    title: "Yoga for Stress Relief",
-    instructor: "Meera Nair",
-    level: "Beginner",
-    style: "Restorative",
-    duration: "30 min",
-    sessions: 14,
-    rating: 4.7,
-    students: 19820,
-    img: "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?w=600&h=400&fit=crop",
-    tag: "Trending",
-    free: true,
-    desc: "Release tension and calm your nervous system.",
-  },
-  {
-    id: 5,
-    title: "Power Vinyasa Strength Build",
-    instructor: "Raj Kumar",
-    level: "Intermediate",
-    style: "Power",
-    duration: "50 min",
-    sessions: 18,
-    rating: 4.8,
-    students: 7210,
-    img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&h=400&fit=crop",
-    tag: "New",
-    free: false,
-    desc: "Build strength and body confidence.",
   },
 ];
 
@@ -155,7 +122,6 @@ export default function Programs() {
       case "Sessions: High to Low":
         return [...filtered].sort((a, b) => b.sessions - a.sessions);
 
-      case "Popularity":
       default:
         return [...filtered].sort((a, b) => b.students - a.students);
     }
@@ -175,7 +141,7 @@ export default function Programs() {
     }
 
     if (enrolledIds.includes(program.id)) {
-      toast.info("Already enrolled!");
+      toast.info("Already enrolled");
       return;
     }
 
@@ -186,15 +152,16 @@ export default function Programs() {
 
   return (
     <PageLayout>
-      {/* Hero */}
+
+      {/* Hero Section */}
       <section className="pt-28 pb-16 bg-sage-light dark:bg-sage-light/5">
         <div className="container mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto text-center">
             <h1 className="font-serif text-4xl sm:text-5xl font-bold mb-4">
               Find Your Perfect Practice
             </h1>
 
-            <p className="text-muted-foreground text-lg">
+            <p className="text-lg text-muted-foreground">
               Explore curated yoga programs for every level.
             </p>
           </div>
@@ -202,69 +169,66 @@ export default function Programs() {
       </section>
 
       {/* Filters */}
-      <section className="sticky top-16 z-20 py-6 border-b bg-background">
+      <section className="sticky top-16 z-20 py-5 border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto px-4 sm:px-6">
-          <div className="flex flex-col lg:flex-row gap-4 lg:items-center">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
             {/* Search */}
-            <div className="relative w-full lg:max-w-sm">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
 
               <input
                 type="text"
+                placeholder="Search programs..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search programs, instructors, or styles..."
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
 
-            {/* Level Filters */}
-            <div className="flex gap-2 flex-wrap">
+            {/* Level Dropdown */}
+            <select
+              value={activeLevel}
+              onChange={(e) => setActiveLevel(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
               {levels.map((level) => (
-                <button
-                  key={level}
-                  onClick={() => setActiveLevel(level)}
-                  className={cn(
-                    "px-4 py-2 rounded-xl text-sm font-medium transition-all",
-                    activeLevel === level
-                      ? "bg-primary text-white"
-                      : "bg-muted text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {level}
-                </button>
+                <option key={level} value={level}>
+                  {level} Level
+                </option>
               ))}
-            </div>
+            </select>
 
-            {/* Style Filters */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {/* Style Dropdown */}
+            <select
+              value={activeStyle}
+              onChange={(e) => setActiveStyle(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
               {styles.map((style) => (
-                <button
-                  key={style}
-                  onClick={() => setActiveStyle(style)}
-                  className={cn(
-                    "px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all",
-                    activeStyle === style
-                      ? "bg-foreground text-background"
-                      : "bg-muted text-muted-foreground hover:text-foreground"
-                  )}
-                >
+                <option key={style} value={style}>
                   {style}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
 
-            {/* Sort */}
+            {/* Sort Dropdown */}
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 rounded-xl border border-input bg-background text-sm"
+              className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option>Popularity</option>
-              <option>Rating</option>
-              <option>Sessions: Low to High</option>
-              <option>Sessions: High to Low</option>
+              <option value="Popularity">Sort: Popularity</option>
+              <option value="Rating">Sort: Rating</option>
+              <option value="Sessions: Low to High">
+                Sessions: Low to High
+              </option>
+              <option value="Sessions: High to Low">
+                Sessions: High to Low
+              </option>
             </select>
+
           </div>
         </div>
       </section>
@@ -272,17 +236,21 @@ export default function Programs() {
       {/* Programs */}
       <section className="py-16">
         <div className="container mx-auto px-4 sm:px-6">
-          <p className="text-sm text-muted-foreground mb-6">
+
+          <p className="text-sm text-muted-foreground mb-8">
             {filteredPrograms.length} programs found
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
             {filteredPrograms.map((program) => (
               <div
                 key={program.id}
-                className="group rounded-2xl overflow-hidden border bg-card hover:shadow-lg transition-all"
+                className="group rounded-2xl overflow-hidden border bg-card hover:shadow-lg transition-all duration-300"
               >
-                <div className="relative h-48 overflow-hidden">
+
+                {/* Image */}
+                <div className="relative h-52 overflow-hidden">
                   <img
                     src={program.img}
                     alt={program.title}
@@ -292,11 +260,13 @@ export default function Programs() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 </div>
 
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
+                {/* Content */}
+                <div className="p-5">
+
+                  <div className="flex items-center gap-2 mb-3">
                     <span
                       className={cn(
-                        "text-xs px-2 py-1 rounded-full font-medium",
+                        "px-2.5 py-1 rounded-full text-xs font-medium",
                         levelColors[program.level]
                       )}
                     >
@@ -308,11 +278,11 @@ export default function Programs() {
                     </span>
                   </div>
 
-                  <h3 className="font-semibold mb-2 line-clamp-2">
+                  <h3 className="text-lg font-semibold mb-2 line-clamp-2">
                     {program.title}
                   </h3>
 
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
                     {program.desc}
                   </p>
 
@@ -324,28 +294,29 @@ export default function Programs() {
 
                     <span className="flex items-center gap-1">
                       <BookOpen className="w-3 h-3" />
-                      {program.sessions}
+                      {program.sessions} Sessions
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-5">
                     <div className="flex items-center gap-1">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
 
                       <span className="text-sm font-medium">
                         {program.rating}
                       </span>
                     </div>
 
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                       {program.instructor}
                     </span>
                   </div>
 
+                  {/* Button */}
                   <button
                     onClick={() => handleEnroll(program)}
                     className={cn(
-                      "w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2",
+                      "w-full py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2",
                       enrolledIds.includes(program.id)
                         ? "bg-green-100 text-green-700"
                         : program.free
@@ -367,12 +338,15 @@ export default function Programs() {
                       </>
                     )}
                   </button>
+
                 </div>
               </div>
             ))}
+
           </div>
         </div>
       </section>
+
     </PageLayout>
   );
 }

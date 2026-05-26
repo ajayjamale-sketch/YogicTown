@@ -4,84 +4,133 @@ import { cn } from "@/lib/utils";
 
 const faqs = [
   {
-    q: "Is YogicTown suitable for complete beginners?",
-    a: "Absolutely! YogicTown is designed for all levels, from complete beginners to advanced practitioners. Our beginner programmes start with foundational poses and breathing techniques, progressing at your own comfortable pace. The AI coach adapts recommendations based on your current level.",
+    question: "Is YogicTown suitable for complete beginners?",
+    answer:
+      "Absolutely! YogicTown is designed for everyone, from beginners to advanced practitioners. Our guided programmes help you learn step-by-step at your own pace with personalised recommendations from the AI Wellness Coach.",
   },
   {
-    q: "How does the AI Wellness Coach work?",
-    a: "Our AI Wellness Coach analyses your wellness profile, practice history, goals, and progress data to generate personalised recommendations for yoga sequences, meditation practices, nutrition guidance, and lifestyle improvements. It learns from your feedback and continuously refines its suggestions.",
+    question: "How does the AI Wellness Coach work?",
+    answer:
+      "The AI Wellness Coach analyses your goals, wellness preferences, activity history, and progress to provide personalised yoga routines, meditation guidance, breathing exercises, nutrition suggestions, and wellness insights.",
   },
   {
-    q: "Can I book one-on-one sessions with instructors?",
-    a: "Yes! Pro and Elite members can book one-on-one coaching sessions with any of our 350+ certified instructors. You can browse instructor profiles, read reviews, check availability, and book sessions directly through the platform.",
+    question: "Can I book one-on-one sessions with instructors?",
+    answer:
+      "Yes. Pro and Elite members can schedule private sessions with certified yoga instructors and wellness experts directly through the platform.",
   },
   {
-    q: "What types of retreats are available?",
-    a: "YogicTown hosts hundreds of retreats globally — from weekend yoga immersions to week-long Ayurvedic healing retreats in India, Bali, and Costa Rica. Filter by location, duration, style, and budget to find your perfect retreat experience.",
+    question: "What types of retreats are available?",
+    answer:
+      "YogicTown offers wellness retreats including yoga immersions, meditation camps, Ayurvedic healing experiences, detox programmes, and mindfulness retreats across multiple global destinations.",
   },
   {
-    q: "How does the subscription work?",
-    a: "All paid plans are billed monthly or annually (with a 25% discount). You can upgrade, downgrade, or cancel at any time. Your access continues until the end of your current billing period. We offer a 7-day free trial for all paid plans.",
+    question: "How does the subscription system work?",
+    answer:
+      "You can subscribe monthly or annually. All plans include flexible upgrades, downgrades, and cancellation options. Paid plans also include a free trial period.",
   },
   {
-    q: "Is my health data kept private?",
-    a: "Yes, your privacy and data security are our top priorities. All personal health data is encrypted and stored securely. We never sell your data to third parties. You have full control over your data and can request deletion at any time.",
+    question: "Is my health and wellness data secure?",
+    answer:
+      "Yes. All user data is encrypted and securely stored. YogicTown follows strict privacy standards and never shares personal wellness information with third parties.",
   },
   {
-    q: "Can I teach on YogicTown as an instructor?",
-    a: "Definitely! Instructors apply through our marketplace, submit their certifications for verification, and once approved, can create class listings, set their own rates, schedule sessions, and build a global student community.",
+    question: "Can I join YogicTown as an instructor?",
+    answer:
+      "Definitely. Certified instructors can apply through the instructor portal, verify their credentials, and start offering classes, workshops, and private sessions globally.",
   },
   {
-    q: "Are the live classes recorded for later viewing?",
-    a: "Yes! All live classes are recorded and available in your session library within a few hours. Pro and Elite members get unlimited access to the recording archive. Starter members can access the last 30 days of recordings.",
+    question: "Are live classes available for replay?",
+    answer:
+      "Yes. Live sessions are recorded and added to the learning library for later viewing. Access depends on your membership plan.",
   },
 ];
 
 export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
+  const toggleFAQ = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
+
   return (
     <section className="py-24 lg:py-32 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="text-center max-w-2xl mx-auto mb-16 section-fade">
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
+
+        {/* Section Header */}
+        <div className="max-w-2xl mx-auto text-center mb-16">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-5">
             Frequently Asked{" "}
-            <span className="text-gradient-sage italic">Questions</span>
+            <span className="text-gradient-sage italic">
+              Questions
+            </span>
           </h2>
-          <p className="text-lg text-muted-foreground">
-            Everything you need to know to start your wellness journey with confidence.
+
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            Everything you need to know about YogicTown,
+            memberships, wellness programmes, and your healing journey.
           </p>
         </div>
 
-        <div className="max-w-3xl mx-auto space-y-3">
-          {faqs.map((faq, i) => (
-            <div
-              key={i}
-              className={cn(
-                "rounded-2xl border border-border bg-card overflow-hidden transition-all duration-200 section-fade",
-                openIndex === i && "border-primary/30 shadow-sm"
-              )}
-              style={{ transitionDelay: `${i * 50}ms` }}
-            >
-              <button
-                onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                className="w-full flex items-center justify-between px-6 py-5 text-left"
+        {/* FAQ Items */}
+        <div className="max-w-3xl mx-auto space-y-4">
+          {faqs.map((faq, index) => {
+            const isOpen = openIndex === index;
+
+            return (
+              <div
+                key={index}
+                className={cn(
+                  "rounded-2xl border bg-card transition-all duration-300 overflow-hidden",
+                  isOpen
+                    ? "border-primary/30 shadow-md"
+                    : "border-border"
+                )}
               >
-                <span className="font-medium text-foreground pr-4">{faq.q}</span>
-                <div className={cn(
-                  "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200",
-                  openIndex === i ? "bg-primary text-white" : "bg-muted text-muted-foreground"
-                )}>
-                  {openIndex === i ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+
+                {/* Question */}
+                <button
+                  onClick={() => toggleFAQ(index)}
+                  className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left"
+                >
+                  <h3 className="text-base sm:text-lg font-medium text-foreground">
+                    {faq.question}
+                  </h3>
+
+                  <div
+                    className={cn(
+                      "flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 flex-shrink-0",
+                      isOpen
+                        ? "bg-primary text-white"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {isOpen ? (
+                      <Minus className="w-4 h-4" />
+                    ) : (
+                      <Plus className="w-4 h-4" />
+                    )}
+                  </div>
+                </button>
+
+                {/* Answer */}
+                <div
+                  className={cn(
+                    "grid transition-all duration-300 ease-in-out",
+                    isOpen
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0"
+                  )}
+                >
+                  <div className="overflow-hidden">
+                    <div className="px-6 pb-6 text-sm sm:text-base text-muted-foreground leading-relaxed">
+                      {faq.answer}
+                    </div>
+                  </div>
                 </div>
-              </button>
-              {openIndex === i && (
-                <div className="px-6 pb-5 text-sm text-muted-foreground leading-relaxed animate-accordion-down">
-                  {faq.a}
-                </div>
-              )}
-            </div>
-          ))}
+
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
