@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const plans = [
   {
@@ -89,6 +90,7 @@ const plans = [
 
 export default function PricingSection() {
   const [yearly, setYearly] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   return (
     <section className="py-24 lg:py-32 bg-sage-light dark:bg-sage-light/5">
@@ -165,7 +167,7 @@ export default function PricingSection() {
               </ul>
 
               <Link
-                to="/register"
+                to={isAuthenticated ? "/pricing" : "/register"}
                 className={cn("w-full py-3 rounded-2xl text-sm font-semibold text-center transition-all duration-200 hover:opacity-90 block", plan.ctaStyle)}
               >
                 {plan.cta}

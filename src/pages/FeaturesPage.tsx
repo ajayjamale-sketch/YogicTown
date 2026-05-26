@@ -3,6 +3,7 @@ import PageLayout from "@/components/layout/PageLayout";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { Link } from "react-router-dom";
 import CTABanner from "@/components/features/CTABanner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const featureDetails = [
   {
@@ -62,6 +63,7 @@ const featureDetails = [
 ];
 
 export default function FeaturesPage() {
+  const { isAuthenticated } = useAuth();
   useIntersectionObserver();
   return (
     <PageLayout>
@@ -99,7 +101,7 @@ export default function FeaturesPage() {
                     </li>
                   ))}
                 </ul>
-                <Link to="/register" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-sage-gradient text-white font-semibold shadow-sage hover:opacity-90 hover:-translate-y-0.5 transition-all">
+                <Link to={isAuthenticated ? "/dashboard" : "/register"} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-sage-gradient text-white font-semibold shadow-sage hover:opacity-90 hover:-translate-y-0.5 transition-all">
                   Try Free <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>

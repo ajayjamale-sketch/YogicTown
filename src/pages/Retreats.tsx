@@ -5,46 +5,67 @@ import PageLayout from "@/components/layout/PageLayout";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useStore } from "@/store/useStore";
 import { cn } from "@/lib/utils";
 
 const types = ["All", "Yoga Immersion", "Meditation", "Ayurvedic", "Sound Healing", "Spiritual", "Adventure"];
 const durations = ["Any Duration", "Weekend (2-3 days)", "Week (5-7 days)", "Extended (8-14 days)"];
-
-const retreats = [
-  { id: 1, title: "7-Day Bali Yoga & Spirit Retreat", location: "Ubud, Bali", country: "Indonesia", type: "Yoga Immersion", duration: "7 days", dates: "Jun 15 – 22, 2025", price: 1890, originalPrice: 2200, participants: 16, maxParticipants: 20, rating: 4.9, reviews: 182, img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&h=500&fit=crop", organizer: "Serenity Wellness Hub", featured: true, tag: "Best Seller", highlights: ["Daily Vinyasa & Yin", "Balinese Healing Ceremony", "Organic Cuisine", "Airport Transfers"] },
-  { id: 2, title: "5-Day Silent Meditation in Rishikesh", location: "Rishikesh", country: "India", type: "Meditation", duration: "5 days", dates: "Jul 8 – 13, 2025", price: 620, originalPrice: 750, participants: 12, maxParticipants: 15, rating: 4.8, reviews: 94, img: "https://images.unsplash.com/photo-1544552866-d3ed42536cfd?w=800&h=500&fit=crop", organizer: "River Ganga Ashram", featured: true, tag: "Sacred", highlights: ["Noble Silence Practice", "Ganga Aarti Ceremony", "Sattvic Meals", "Yoga Nidra"] },
-  { id: 3, title: "Weekend Coastal Yoga Escape", location: "Tulum", country: "Mexico", type: "Yoga Immersion", duration: "3 days", dates: "Jun 28 – 30, 2025", price: 480, originalPrice: 580, participants: 10, maxParticipants: 14, rating: 4.7, reviews: 67, img: "https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?w=800&h=500&fit=crop", organizer: "Tulum Wellness Co.", featured: false, tag: "Weekend", highlights: ["Beach Yoga Sessions", "Cenote Ceremony", "Fresh Ceviche Dinners", "Sunset Meditation"] },
-  { id: 4, title: "Panchakarma Ayurvedic Detox", location: "Kerala", country: "India", type: "Ayurvedic", duration: "14 days", dates: "Jul 20 – Aug 3, 2025", price: 2400, originalPrice: 2900, participants: 8, maxParticipants: 10, rating: 4.9, reviews: 48, img: "https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=800&h=500&fit=crop", organizer: "Vaidyagrama", featured: true, tag: "Deep Cleanse", highlights: ["Full Panchakarma", "Ayurvedic Doctor Consultation", "Herbal Treatments", "Traditional Marma"] },
-  { id: 5, title: "Sound Healing & Cacao Journey", location: "Cusco", country: "Peru", type: "Sound Healing", duration: "5 days", dates: "Aug 5 – 10, 2025", price: 780, originalPrice: 920, participants: 14, maxParticipants: 16, rating: 4.8, reviews: 71, img: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=800&h=500&fit=crop", organizer: "Sacred Harmony", featured: false, tag: "Transformative", highlights: ["Crystal Bowl Ceremonies", "Andean Cacao Ritual", "Machu Picchu Sunrise", "Shamanic Healing"] },
-  { id: 6, title: "10-Day Kundalini Awakening", location: "Ibiza", country: "Spain", type: "Spiritual", duration: "10 days", dates: "Sep 1 – 11, 2025", price: 3200, originalPrice: 3800, participants: 6, maxParticipants: 12, rating: 4.9, reviews: 39, img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=500&fit=crop", organizer: "White Isle Spiritual", featured: true, tag: "Premium", highlights: ["Kundalini Yoga Sets", "Breathwork Sessions", "Sacred Dance", "Sea Meditation"] },
-];
 
 export default function Retreats() {
   useIntersectionObserver();
   const [search, setSearch] = useState("");
   const [activeType, setActiveType] = useState("All");
   const [activeDuration, setActiveDuration] = useState("Any Duration");
-  const [wishlist, setWishlist] = useState<number[]>([]);
-  const [modalRetreat, setModalRetreat] = useState<typeof retreats[0] | null>(null);
-  const { isAuthenticated } = useAuth();
+  const [sortBy, setSortBy] = useState("Featured");
+  const { isAuthenticated, user } = useAuth();
+  const store = useStore();
   const navigate = useNavigate();
 
-  const filtered = retreats.filter(r => {
-    const matchSearch = r.title.toLowerCase().includes(search.toLowerCase()) || r.location.toLowerCase().includes(search.toLowerCase());
-    const matchType = activeType === "All" || r.type === activeType;
-    return matchSearch && matchType;
-  });
+  const retreatsList = store.retreats.filter(r => r.approved !== false);
+  const wishlist = store.wishlist;
 
-  const handleBook = (retreat: typeof retreats[0]) => {
-    if (!isAuthenticated) { toast.info("Please sign in to book a retreat"); navigate("/login"); return; }
-    toast.success(`Booking request sent for "${retreat.title}"! Our team will contact you within 24h.`);
+  const [modalRetreat, setModalRetreat] = useState<typeof retreatsList[0] | null>(null);
+
+  const filtered = retreatsList
+    .filter(r => {
+      const matchSearch = r.title.toLowerCase().includes(search.toLowerCase()) || r.location.toLowerCase().includes(search.toLowerCase());
+      const matchType = activeType.toLowerCase() === "all" || r.type.toLowerCase() === activeType.toLowerCase();
+      
+      const matchDuration = activeDuration.toLowerCase() === "any duration" || activeDuration.toLowerCase().includes("any") || (() => {
+        const days = parseInt(r.duration) || 0;
+        if (activeDuration === "Weekend (2-3 days)") return days >= 2 && days <= 3;
+        if (activeDuration === "Week (5-7 days)") return days >= 5 && days <= 7;
+        if (activeDuration === "Extended (8-14 days)") return days >= 8 && days <= 14;
+        return true;
+      })();
+
+      return matchSearch && matchType && matchDuration;
+    })
+    .sort((a, b) => {
+      if (sortBy === "Price: Low to High") return a.price - b.price;
+      if (sortBy === "Price: High to Low") return b.price - a.price;
+      if (sortBy === "Rating") return b.rating - a.rating;
+      
+      // Default / Featured
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return b.rating - a.rating;
+    });
+
+  const handleBook = (retreat: typeof retreatsList[0]) => {
+    if (!isAuthenticated || !user) { toast.info("Please sign in to book a retreat"); navigate("/login"); return; }
+    store.bookRetreat(retreat.id, { name: user.name, email: user.email });
+    toast.success(`Booking request confirmed for "${retreat.title}"! It has been added to your dashboard.`);
     setModalRetreat(null);
   };
 
   const toggleWishlist = (id: number) => {
-    setWishlist(prev => prev.includes(id) ? prev.filter(w => w !== id) : [...prev, id]);
-    toast.success(wishlist.includes(id) ? "Removed from wishlist" : "Added to wishlist!");
+    if (!isAuthenticated) { navigate("/login"); return; }
+    store.toggleWishlistRetreat(id);
+    const isWish = store.wishlist.includes(id);
+    toast.success(!isWish ? "Added to wishlist!" : "Removed from wishlist");
   };
+
 
   return (
     <PageLayout>
@@ -81,10 +102,16 @@ export default function Retreats() {
               </button>
             ))}
           </div>
-          <select value={activeDuration} onChange={e => setActiveDuration(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary ml-auto">
-            {durations.map(d => <option key={d}>{d}</option>)}
-          </select>
+          <div className="flex items-center gap-2 ml-auto">
+            <select value={activeDuration} onChange={e => setActiveDuration(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+              {durations.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+              {["Featured", "Price: Low to High", "Price: High to Low", "Rating"].map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
         </div>
       </section>
 
@@ -92,67 +119,88 @@ export default function Retreats() {
       <section className="py-16 bg-background">
         <div className="container mx-auto px-4 sm:px-6">
           <p className="text-sm text-muted-foreground mb-6">{filtered.length} retreats available</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-            {filtered.map((retreat, i) => (
-              <div key={retreat.id} className="group rounded-3xl bg-card border border-border overflow-hidden hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 section-fade" style={{ transitionDelay: `${i * 80}ms` }}>
-                <div className="relative h-56 overflow-hidden">
-                  <img src={retreat.img} alt={retreat.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-white/90 text-foreground font-semibold">{retreat.tag}</span>
-                    {retreat.featured && <span className="text-xs px-2.5 py-1 rounded-full bg-primary text-white font-medium">Featured</span>}
-                  </div>
-                  <button onClick={() => toggleWishlist(retreat.id)} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all hover:bg-white/40">
-                    <Heart className={cn("w-4 h-4", wishlist.includes(retreat.id) ? "text-red-400 fill-red-400" : "text-white")} />
-                  </button>
-                  <div className="absolute bottom-4 left-4">
-                    <div className="flex items-center gap-1 text-white/90 text-xs">
-                      <MapPin className="w-3 h-3" /> {retreat.location}, {retreat.country}
+          {filtered.length === 0 ? (
+            <div className="text-center py-16 bg-card border border-border rounded-3xl p-8 max-w-md mx-auto animate-fade-in col-span-full">
+              <div className="text-4xl mb-4">🏝️</div>
+              <h3 className="font-serif text-xl font-bold text-foreground mb-2">No Retreats Found</h3>
+              <p className="text-muted-foreground text-sm mb-6">
+                We couldn't find any wellness retreats matching your search criteria or filters.
+              </p>
+              <button 
+                onClick={() => {
+                  setSearch("");
+                  setActiveType("All");
+                  setActiveDuration("Any Duration");
+                  setSortBy("Featured");
+                }}
+                className="px-5 py-2.5 rounded-xl bg-sage-gradient text-white text-sm font-semibold shadow-sage hover:opacity-90 transition-all"
+              >
+                Reset All Filters
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {filtered.map((retreat, i) => (
+                <div key={retreat.id} className="group rounded-3xl bg-card border border-border overflow-hidden hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 section-fade" style={{ transitionDelay: `${i * 80}ms` }}>
+                  <div className="relative h-56 overflow-hidden">
+                    <img src={retreat.img} alt={retreat.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                    <div className="absolute top-4 left-4 flex gap-2">
+                      <span className="text-xs px-2.5 py-1 rounded-full bg-white/90 text-foreground font-semibold">{retreat.tag}</span>
+                      {retreat.featured && <span className="text-xs px-2.5 py-1 rounded-full bg-primary text-white font-medium">Featured</span>}
                     </div>
-                  </div>
-                </div>
-                <div className="p-5">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-serif font-bold text-foreground leading-snug">{retreat.title}</h3>
-                  </div>
-                  <div className="flex items-center gap-1 mb-3">
-                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                    <span className="text-sm font-semibold text-foreground">{retreat.rating}</span>
-                    <span className="text-xs text-muted-foreground">({retreat.reviews} reviews)</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Clock className="w-3 h-3 flex-shrink-0" /> {retreat.duration}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Calendar className="w-3 h-3 flex-shrink-0" /> {retreat.dates.split(" – ")[0]}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Users className="w-3 h-3 flex-shrink-0" /> {retreat.maxParticipants - retreat.participants} spots
-                    </div>
-                  </div>
-                  <div className="flex gap-1.5 mb-4 flex-wrap">
-                    {retreat.highlights.slice(0, 2).map(h => (
-                      <span key={h} className="text-xs px-2 py-1 rounded-lg bg-sage-light dark:bg-sage-light/30 text-primary font-medium">{h}</span>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-serif text-2xl font-bold text-foreground">${retreat.price.toLocaleString()}</span>
-                        <span className="text-sm text-muted-foreground line-through">${retreat.originalPrice.toLocaleString()}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground">per person, all inclusive</div>
-                    </div>
-                    <button onClick={() => setModalRetreat(retreat)}
-                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-sage-gradient text-white text-sm font-semibold shadow-sage hover:opacity-90 transition-all">
-                      Book Now <ArrowRight className="w-3.5 h-3.5" />
+                    <button onClick={() => toggleWishlist(retreat.id)} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all hover:bg-white/40">
+                      <Heart className={cn("w-4 h-4", wishlist.includes(retreat.id) ? "text-red-400 fill-red-400" : "text-white")} />
                     </button>
+                    <div className="absolute bottom-4 left-4">
+                      <div className="flex items-center gap-1 text-white/90 text-xs">
+                        <MapPin className="w-3 h-3" /> {retreat.location}, {retreat.country}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-serif font-bold text-foreground leading-snug">{retreat.title}</h3>
+                    </div>
+                    <div className="flex items-center gap-1 mb-3">
+                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                      <span className="text-sm font-semibold text-foreground">{retreat.rating}</span>
+                      <span className="text-xs text-muted-foreground">({retreat.reviews} reviews)</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Clock className="w-3 h-3 flex-shrink-0" /> {retreat.duration}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Calendar className="w-3 h-3 flex-shrink-0" /> {retreat.dates.split(" – ")[0]}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Users className="w-3 h-3 flex-shrink-0" /> {retreat.maxParticipants - retreat.participants} spots
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5 mb-4 flex-wrap">
+                      {retreat.highlights.slice(0, 2).map(h => (
+                        <span key={h} className="text-xs px-2 py-1 rounded-lg bg-sage-light dark:bg-sage-light/30 text-primary font-medium">{h}</span>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-serif text-2xl font-bold text-foreground">${retreat.price.toLocaleString()}</span>
+                          <span className="text-sm text-muted-foreground line-through">${retreat.originalPrice.toLocaleString()}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">per person, all inclusive</div>
+                      </div>
+                      <button onClick={() => setModalRetreat(retreat)}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-sage-gradient text-white text-sm font-semibold shadow-sage hover:opacity-90 transition-all">
+                        Book Now <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

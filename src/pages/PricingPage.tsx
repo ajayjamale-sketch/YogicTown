@@ -1,11 +1,13 @@
-import { useState } from "react";
-import { Check, Zap, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Check, Zap, ArrowRight, X, CreditCard, Lock, Loader2 } from "lucide-react";
 import PageLayout from "@/components/layout/PageLayout";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import FAQSection from "@/components/features/FAQSection";
 import CTABanner from "@/components/features/CTABanner";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const plans = [
   {
@@ -55,7 +57,106 @@ const comparison = [
 
 export default function PricingPage() {
   const [yearly, setYearly] = useState(false);
+  const { isAuthenticated, user, updateProfile } = useAuth();
+  const navigate = useNavigate();
   useIntersectionObserver();
+
+  // Payment modal state
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvc, setCvc] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Sync Cardholder Name with user name
+  useEffect(() => {
+    if (selectedPlan && user) {
+      setCardName(user.name || "");
+    }
+  }, [selectedPlan, user]);
+
+  const handleCtaClick = (plan: any) => {
+    if (user?.plan === plan.id) {
+      return; // Already subscribed
+    }
+
+    if (!isAuthenticated) {
+      toast.info("Please create an account or sign in to subscribe to " + plan.name + "!");
+      navigate("/register");
+      return;
+    }
+
+    // If free plan, upgrade directly without payment modal
+    if (plan.id === "free") {
+      setIsProcessing(true);
+      const loadingToast = toast.loading("Processing tier downgrade...");
+      setTimeout(() => {
+        updateProfile({ plan: "free" });
+        toast.dismiss(loadingToast);
+        toast.success("Welcome back to the Free tier!");
+        setIsProcessing(false);
+      }, 800);
+      return;
+    }
+
+    setSelectedPlan(plan);
+  };
+
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 16) value = value.slice(0, 16);
+    const formatted = value.match(/.{1,4}/g)?.join(" ") || value;
+    setCardNumber(formatted);
+  };
+
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 4) value = value.slice(0, 4);
+    if (value.length >= 2) {
+      value = value.slice(0, 2) + "/" + value.slice(2);
+    }
+    setExpiry(value);
+  };
+
+  const handleCvcChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, "").slice(0, 3);
+    setCvc(value);
+  };
+
+  const handlePaymentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cardNumber || cardNumber.replace(/\s/g, "").length !== 16) {
+      toast.error("Please enter a valid 16-digit card number.");
+      return;
+    }
+    if (!expiry || expiry.length !== 5) {
+      toast.error("Please enter a valid expiry date (MM/YY).");
+      return;
+    }
+    if (!cvc || cvc.length < 3) {
+      toast.error("Please enter a valid 3-digit CVC/CVV.");
+      return;
+    }
+    if (!cardName.trim()) {
+      toast.error("Please enter the cardholder's name.");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    setTimeout(() => {
+      updateProfile({ plan: selectedPlan.id });
+      toast.success(`Success! You have upgraded to the ${selectedPlan.name} plan.`);
+      setIsProcessing(false);
+      setSelectedPlan(null);
+      // Reset fields
+      setCardNumber("");
+      setExpiry("");
+      setCvc("");
+      setCardName("");
+    }, 1500);
+  };
 
   return (
     <PageLayout>
@@ -104,7 +205,18 @@ export default function PricingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link to="/register" className={cn("w-full py-3 rounded-2xl text-sm font-semibold text-center transition-all hover:opacity-90 block", plan.ctaStyle)}>{plan.cta}</Link>
+                <button
+                  onClick={() => handleCtaClick(plan)}
+                  className={cn(
+                    "w-full py-3 rounded-2xl text-sm font-semibold text-center transition-all hover:opacity-90 block cursor-pointer",
+                    user?.plan === plan.id
+                      ? "bg-muted text-muted-foreground border border-border cursor-default hover:opacity-100"
+                      : plan.ctaStyle
+                  )}
+                  disabled={user?.plan === plan.id}
+                >
+                  {user?.plan === plan.id ? "Current Plan" : plan.cta}
+                </button>
               </div>
             ))}
           </div>
@@ -146,6 +258,122 @@ export default function PricingPage() {
 
       <FAQSection />
       <CTABanner />
+
+      {/* Checkout Payment Modal */}
+      {selectedPlan && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border w-full max-w-md rounded-3xl overflow-hidden shadow-2xl relative animate-scale-up">
+            <button
+              onClick={() => {
+                if (!isProcessing) setSelectedPlan(null);
+              }}
+              className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-muted transition-colors"
+              disabled={isProcessing}
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="p-6">
+              <div className="mb-6">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full">Secure Checkout</span>
+                <h3 className="font-serif text-2xl font-bold text-foreground mt-3">Complete Your Upgrade</h3>
+                <p className="text-sm text-muted-foreground mt-1">Upgrade your wellness practice today</p>
+              </div>
+
+              {/* Plan Summary */}
+              <div className="p-4 rounded-2xl bg-muted/30 border border-border mb-6 flex justify-between items-center">
+                <div>
+                  <h4 className="font-semibold text-foreground">{selectedPlan.name} Plan</h4>
+                  <p className="text-xs text-muted-foreground">7-day free trial, then billed {yearly ? "annually" : "monthly"}</p>
+                </div>
+                <div className="text-right">
+                  <span className="font-serif text-xl font-bold text-foreground">${yearly ? selectedPlan.yearlyPrice : selectedPlan.monthlyPrice}</span>
+                  <span className="text-xs text-muted-foreground">/mo</span>
+                </div>
+              </div>
+
+              {/* Payment Form */}
+              <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">CARDHOLDER NAME</label>
+                  <input
+                    type="text"
+                    required
+                    value={cardName}
+                    onChange={(e) => setCardName(e.target.value)}
+                    disabled={isProcessing}
+                    placeholder="Aria Sharma"
+                    className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">CARD NUMBER</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      value={cardNumber}
+                      onChange={handleCardNumberChange}
+                      disabled={isProcessing}
+                      placeholder="4111 2222 3333 4444"
+                      className="w-full rounded-xl border border-input bg-background/50 pl-11 pr-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50"
+                    />
+                    <CreditCard className="w-5 h-5 text-muted-foreground/60 absolute left-4 top-1/2 -translate-y-1/2" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1.5">EXPIRATION DATE</label>
+                    <input
+                      type="text"
+                      required
+                      value={expiry}
+                      onChange={handleExpiryChange}
+                      disabled={isProcessing}
+                      placeholder="MM/YY"
+                      className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm placeholder:text-muted-foreground/50 text-center focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1.5">CVC / CVV</label>
+                    <input
+                      type="password"
+                      required
+                      value={cvc}
+                      onChange={handleCvcChange}
+                      disabled={isProcessing}
+                      placeholder="•••"
+                      className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm placeholder:text-muted-foreground/50 text-center focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-muted-foreground flex items-center justify-center gap-1.5 pt-2">
+                  <Lock className="w-3.5 h-3.5 text-primary" />
+                  <span>Payments are secured with 256-bit SSL encryption.</span>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="w-full py-3 rounded-2xl bg-sage-gradient text-white text-sm font-semibold shadow-sage hover:opacity-90 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Processing secure payment...</span>
+                    </>
+                  ) : (
+                    <span>Pay & Upgrade to {selectedPlan.name}</span>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </PageLayout>
   );
 }

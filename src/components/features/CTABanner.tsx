@@ -1,7 +1,11 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 export default function CTABanner() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <section className="py-24 lg:py-32 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
@@ -25,7 +29,7 @@ export default function CTABanner() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                to="/register"
+                to={isAuthenticated ? "/dashboard" : "/register"}
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white text-sage-dark font-semibold hover:opacity-90 hover:-translate-y-1 transition-all duration-300 shadow-xl"
               >
                 Begin Free Trial

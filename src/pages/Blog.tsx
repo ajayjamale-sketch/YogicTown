@@ -20,7 +20,7 @@ export default function Blog() {
   useIntersectionObserver();
 
   const filtered = posts.filter(p =>
-    (activeCategory === "All" || p.category === activeCategory) &&
+    (activeCategory.toLowerCase() === "all" || p.category.toLowerCase() === activeCategory.toLowerCase()) &&
     (p.title.toLowerCase().includes(search.toLowerCase()) || p.excerpt.toLowerCase().includes(search.toLowerCase()))
   );
   const featured = filtered.filter(p => p.featured);
@@ -117,10 +117,19 @@ export default function Blog() {
           </div>
 
           {filtered.length === 0 && (
-            <div className="text-center py-20">
+            <div className="text-center py-20 max-w-md mx-auto">
               <div className="text-4xl mb-4">🔍</div>
               <h3 className="font-semibold text-foreground mb-2">No articles found</h3>
-              <p className="text-muted-foreground text-sm">Try a different search term or category</p>
+              <p className="text-muted-foreground text-sm mb-6">Try a different search term or category</p>
+              <button 
+                onClick={() => {
+                  setSearch("");
+                  setActiveCategory("All");
+                }}
+                className="px-5 py-2.5 rounded-xl bg-sage-gradient text-white text-sm font-semibold shadow-sage hover:opacity-90 transition-all"
+              >
+                Reset All Filters
+              </button>
             </div>
           )}
         </div>

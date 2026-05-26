@@ -1,5 +1,6 @@
 import { UserPlus, ClipboardList, Play, TrendingUp, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const steps = [
   {
@@ -33,6 +34,8 @@ const steps = [
 ];
 
 export default function Workflow() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <section className="py-24 lg:py-32 bg-sage-light dark:bg-sage-light/10">
       <div className="container mx-auto px-4 sm:px-6">
@@ -80,7 +83,7 @@ export default function Workflow() {
 
         <div className="text-center mt-14 section-fade">
           <Link
-            to="/register"
+            to={isAuthenticated ? "/dashboard" : "/register"}
             className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-sage-gradient text-white font-semibold shadow-sage hover:opacity-90 hover:-translate-y-1 hover:shadow-lg transition-all duration-300"
           >
             Start Your Journey Today

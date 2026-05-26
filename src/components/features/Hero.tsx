@@ -1,6 +1,8 @@
 import heroBg from "@/assets/hero-bg.jpg";
 import { Link } from "react-router-dom";
 import { ArrowRight, Play, Star, Users, BookOpen, Flame } from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const stats = [
   { value: "50K+", label: "Active Practitioners", icon: Users },
@@ -10,6 +12,8 @@ const stats = [
 ];
 
 export default function Hero() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* Background */}
@@ -50,19 +54,20 @@ export default function Hero() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-16 animate-fade-in" style={{ animationDelay: "0.3s" }}>
             <Link
-              to="/register"
+              to={isAuthenticated ? "/dashboard" : "/register"}
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-sage-gradient text-white font-semibold shadow-sage hover:opacity-90 hover:-translate-y-1 hover:shadow-lg transition-all duration-300"
             >
               Begin Your Journey
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <button className="inline-flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-background/80 backdrop-blur-sm border border-border text-foreground font-medium hover:bg-muted transition-all duration-200">
+            <button onClick={() => toast.success("Launching YogicTown introduction tour... 🧘")} className="inline-flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-background/80 backdrop-blur-sm border border-border text-foreground font-medium hover:bg-muted transition-all duration-200">
               <div className="w-8 h-8 rounded-full bg-warm-gradient flex items-center justify-center shadow-warm">
                 <Play className="w-3 h-3 text-white fill-white ml-0.5" />
               </div>
               Watch Demo
             </button>
           </div>
+
 
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
