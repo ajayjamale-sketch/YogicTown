@@ -15,6 +15,8 @@ export interface User {
   location: string;
   yogaLevel: string;
   goals: string[];
+  healthFocus?: string[];
+  onboardingCompleted?: boolean;
   specialization?: string;
   certifications?: string[];
   studentsCount?: number;
@@ -121,6 +123,17 @@ export interface Consultation {
   clientName: string;
   time: string;
   type: "video" | "chat" | "in-person";
+}
+
+export interface WellnessProgram {
+  id: string;
+  title: string;
+  format: "workshop" | "course" | "challenge";
+  duration: string;
+  price: number;
+  enrolledClients: number;
+  status: "draft" | "published";
+  description: string;
 }
 
 export interface PendingInstructor {
@@ -364,6 +377,7 @@ interface AppState {
   mealPlans: MealPlan[];
   clients: ClientProgress[];
   consultations: Consultation[];
+  wellnessPrograms: WellnessProgram[];
 
   // Admin Dashboard
   pendingInstructors: PendingInstructor[];
@@ -406,6 +420,8 @@ interface AppState {
 
   // Nutrition Actions
   createMealPlan: (plan: Partial<MealPlan>) => void;
+  createWellnessProgram: (program: Omit<WellnessProgram, "id" | "enrolledClients" | "status">) => void;
+  deleteWellnessProgram: (id: string) => void;
   assignMealPlan: (clientId: string, planName: string) => void;
   scheduleConsultation: (clientName: string, dateTime: string, type: "video" | "chat" | "in-person") => void;
   updateClientProgress: (clientName: string, progress: number) => void;
@@ -494,6 +510,10 @@ export const useStore = create<AppState>()(
       consultations: [
         { id: "con-1", clientName: "Sara Chen", time: "Today, 4:00 PM", type: "video" },
         { id: "con-2", clientName: "David Lee", time: "Tomorrow, 10:30 AM", type: "chat" }
+      ],
+      wellnessPrograms: [
+        { id: "wp-1", title: "Ayurvedic Reset Workshop", format: "workshop", duration: "2 weeks", price: 149, enrolledClients: 18, status: "published", description: "A guided reset for digestion, sleep, and daily food rituals." },
+        { id: "wp-2", title: "Mindful Meal Prep Course", format: "course", duration: "4 weeks", price: 249, enrolledClients: 11, status: "published", description: "Weekly coaching modules for sustainable plant-forward planning." }
       ],
 
       // Admin Dashboard
@@ -803,6 +823,22 @@ export const useStore = create<AppState>()(
         set({ mealPlans: [...mealPlans, newPlan] });
       },
 
+      createWellnessProgram: (program) => {
+        const { wellnessPrograms } = get();
+        const newProgram: WellnessProgram = {
+          ...program,
+          id: `wp-${Date.now()}`,
+          enrolledClients: 0,
+          status: "published",
+        };
+        set({ wellnessPrograms: [newProgram, ...wellnessPrograms] });
+      },
+
+      deleteWellnessProgram: (id) => {
+        const { wellnessPrograms } = get();
+        set({ wellnessPrograms: wellnessPrograms.filter((program) => program.id !== id) });
+      },
+
       assignMealPlan: (clientId, planName) => {
         const { clients, mealPlans } = get();
         const updatedClients = clients.map((c) => (c.name === clientId ? { ...c, plan: planName } : c));
@@ -1008,6 +1044,7 @@ export const useStore = create<AppState>()(
         mealPlans: state.mealPlans,
         clients: state.clients,
         consultations: state.consultations,
+        wellnessPrograms: state.wellnessPrograms,
         pendingInstructors: state.pendingInstructors,
         suspendedUsers: state.suspendedUsers,
         managedUsers: state.managedUsers,

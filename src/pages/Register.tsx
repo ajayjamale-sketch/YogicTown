@@ -28,7 +28,7 @@ export default function Register() {
     const success = await register(name, email, password);
     if (success) {
       toast.success("Welcome to YogicTown! Your journey begins now 🌿");
-      navigate("/dashboard");
+      navigate("/onboarding/assessment");
     } else {
       toast.error("Registration failed. Please try again.");
     }

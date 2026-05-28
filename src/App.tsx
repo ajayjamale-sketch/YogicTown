@@ -27,6 +27,7 @@ import Meditation from "./pages/Meditation";
 import Retreats from "./pages/Retreats";
 import Community from "./pages/Community";
 import Instructors from "./pages/Instructors";
+import WellnessAssessment from "./pages/WellnessAssessment";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -104,6 +105,7 @@ const App = () => (
               <Route path="/dashboard/retreat" element={<ProtectedRoute allowedRoles={["wellness_center"]}><Dashboard /></ProtectedRoute>} />
               <Route path="/dashboard/nutrition" element={<ProtectedRoute allowedRoles={["nutrition_expert"]}><Dashboard /></ProtectedRoute>} />
               <Route path="/dashboard/admin" element={<ProtectedRoute allowedRoles={["admin"]}><Dashboard /></ProtectedRoute>} />
+              <Route path="/onboarding/assessment" element={<ProtectedRoute allowedRoles={["user"]}><WellnessAssessment /></ProtectedRoute>} />
               
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
@@ -131,4 +133,3 @@ const App = () => (
 );
 
 export default App;
-

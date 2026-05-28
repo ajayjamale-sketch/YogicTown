@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useStore, Program, Retreat, YogaClass, MealPlan, Consultation, ManagedUser } from "@/store/useStore";
+import { useStore, Program, Retreat, YogaClass, MealPlan, Consultation, ManagedUser, WellnessProgram } from "@/store/useStore";
 import { cn } from "@/lib/utils";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { useScrollTop } from "@/hooks/useScrollTop";
@@ -54,6 +54,7 @@ export default function Dashboard() {
     nutrition_expert: [
       { icon: LayoutDashboard, label: "Overview" },
       { icon: Utensils, label: "Meal Plans" },
+      { icon: BookOpen, label: "Wellness Programs" },
       { icon: Users, label: "Client Coaching" },
     ],
     admin: [
@@ -95,6 +96,11 @@ export default function Dashboard() {
   const [lnch, setLnch] = useState("");
   const [dnnr, setDnnr] = useState("");
   const [snck, setSnck] = useState("");
+  const [wellnessProgramTitle, setWellnessProgramTitle] = useState("");
+  const [wellnessProgramFormat, setWellnessProgramFormat] = useState<WellnessProgram["format"]>("workshop");
+  const [wellnessProgramDuration, setWellnessProgramDuration] = useState("");
+  const [wellnessProgramPrice, setWellnessProgramPrice] = useState(149);
+  const [wellnessProgramDescription, setWellnessProgramDescription] = useState("");
 
   const [activeClientName, setActiveClientName] = useState("");
   const [selectedPlanId, setSelectedPlanId] = useState("");
@@ -224,6 +230,27 @@ export default function Dashboard() {
       setDnnr("");
       setSnck("");
       toast.success("Meal plan created!");
+    }, 600);
+  };
+
+  const handleCreateWellnessProgram = (e: React.FormEvent) => {
+    e.preventDefault();
+    setModalLoading(true);
+    setTimeout(() => {
+      store.createWellnessProgram({
+        title: wellnessProgramTitle,
+        format: wellnessProgramFormat,
+        duration: wellnessProgramDuration,
+        price: wellnessProgramPrice,
+        description: wellnessProgramDescription,
+      });
+      setModalLoading(false);
+      setActiveModal(null);
+      setWellnessProgramTitle("");
+      setWellnessProgramDuration("");
+      setWellnessProgramPrice(149);
+      setWellnessProgramDescription("");
+      toast.success("Wellness program published!");
     }, 600);
   };
 
@@ -621,6 +648,52 @@ export default function Dashboard() {
               <button type="button" onClick={() => setActiveModal(null)} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-all">Cancel</button>
               <button type="submit" disabled={modalLoading} className="flex-1 py-2.5 rounded-xl bg-sage-gradient text-white text-sm font-semibold shadow-sage hover:opacity-90 transition-all flex items-center justify-center">
                 {modalLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Save Plan"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Create Wellness Program Modal */}
+      {activeModal === "create_wellness_program" && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <form onSubmit={handleCreateWellnessProgram} className="bg-card border border-border rounded-3xl p-6 max-w-md w-full shadow-2xl animate-fade-in space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="font-serif text-xl font-bold text-foreground">Create Wellness Program</h3>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Program Title</label>
+              <input type="text" required placeholder="e.g. 21-Day Gut Reset" value={wellnessProgramTitle} onChange={e => setWellnessProgramTitle(e.target.value)} className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Format</label>
+                <select value={wellnessProgramFormat} onChange={e => setWellnessProgramFormat(e.target.value as WellnessProgram["format"])} className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="workshop">Workshop</option>
+                  <option value="course">Course</option>
+                  <option value="challenge">Challenge</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Price ($)</label>
+                <input type="number" required min="0" value={wellnessProgramPrice} onChange={e => setWellnessProgramPrice(Number(e.target.value))} className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Duration</label>
+              <input type="text" required placeholder="e.g. 4 weeks" value={wellnessProgramDuration} onChange={e => setWellnessProgramDuration(e.target.value)} className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Description</label>
+              <textarea required rows={4} placeholder="What clients will learn or transform" value={wellnessProgramDescription} onChange={e => setWellnessProgramDescription(e.target.value)} className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setActiveModal(null)} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-all">Cancel</button>
+              <button type="submit" disabled={modalLoading} className="flex-1 py-2.5 rounded-xl bg-sage-gradient text-white text-sm font-semibold shadow-sage hover:opacity-90 transition-all flex items-center justify-center">
+                {modalLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Publish Program"}
               </button>
             </div>
           </form>
@@ -1424,6 +1497,17 @@ function InstructorDashboard({ store, user, activeItem, setActiveModal, setSelec
               </div>
             ))}
           </div>
+
+          <Link to="/community" className="p-6 rounded-2xl bg-card border border-border hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center justify-between gap-4">
+            <div>
+              <div className="w-11 h-11 rounded-xl bg-sage-light text-primary flex items-center justify-center mb-4">
+                <Users className="w-5 h-5" />
+              </div>
+              <h3 className="font-semibold text-foreground">Build Community</h3>
+              <p className="text-sm text-muted-foreground mt-1">Share guidance, answer student questions, and post as your instructor profile.</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+          </Link>
         </div>
       </div>
     );
@@ -1582,6 +1666,15 @@ function InstructorDashboard({ store, user, activeItem, setActiveModal, setSelec
 // =============================================================
 function WellnessCenterDashboard({ store, user, activeItem, setActiveModal, setSelectedItem }: any) {
   const activeRetreats = store.retreats.filter((r: Retreat) => r.organizer === user?.name);
+  const confirmedBookings = store.bookings.filter((b: any) => b.status === "confirmed").length;
+  const conversionRate = store.bookings.length ? Math.round((confirmedBookings / store.bookings.length) * 100) : 0;
+  const totalCapacity = activeRetreats.reduce((sum: number, retreat: Retreat) => sum + retreat.maxParticipants, 0);
+  const bookedSeats = activeRetreats.reduce((sum: number, retreat: Retreat) => sum + retreat.participants, 0);
+  const occupancyRate = totalCapacity ? Math.round((bookedSeats / totalCapacity) * 100) : 0;
+  const revenueTrend = [
+    { m: "Jan", v: 9200 }, { m: "Feb", v: 11400 }, { m: "Mar", v: 10800 },
+    { m: "Apr", v: 13700 }, { m: "May", v: 15100 }, { m: "Jun", v: Math.max(confirmedBookings * 1800, 7600) },
+  ];
 
   const handleOpenEdit = (r: Retreat) => {
     setSelectedItem(r);
@@ -1643,6 +1736,44 @@ function WellnessCenterDashboard({ store, user, activeItem, setActiveModal, setS
                 </span>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 p-6 rounded-2xl bg-card border border-border">
+            <h3 className="font-semibold text-foreground mb-4">Performance Analytics</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={revenueTrend}>
+                <XAxis dataKey="m" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <Tooltip />
+                <Area type="monotone" dataKey="v" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="hsl(var(--primary)/0.12)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-5">
+            <div>
+              <div className="flex justify-between text-sm font-semibold text-foreground mb-2">
+                <span>Booking Conversion</span>
+                <span>{conversionRate}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-full bg-primary rounded-full" style={{ width: `${conversionRate}%` }} />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">{confirmedBookings} of {store.bookings.length} bookings confirmed</p>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-sm font-semibold text-foreground mb-2">
+                <span>Occupancy Rate</span>
+                <span>{occupancyRate}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${occupancyRate}%` }} />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">{bookedSeats} of {totalCapacity || 1} retreat seats reserved</p>
+            </div>
           </div>
         </div>
       </div>
@@ -1769,6 +1900,7 @@ function NutritionDashboard({ store, user, activeItem, setActiveModal, setSelect
             <p className="text-muted-foreground mt-1">{store.clients.length} active client profiles</p>
           </div>
           <div className="flex gap-2">
+            <button onClick={() => setActiveModal("create_wellness_program")} className="px-3.5 py-2 text-xs font-semibold rounded-xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground">Publish Program</button>
             <button onClick={() => setActiveModal("create_meal")} className="px-4 py-2 text-sm font-semibold rounded-xl bg-sage-gradient text-white shadow-sage hover:opacity-90 transition-all flex items-center gap-1">
               <PlusCircle className="w-4 h-4" /> Create Meal Plan
             </button>
@@ -1780,6 +1912,7 @@ function NutritionDashboard({ store, user, activeItem, setActiveModal, setSelect
           {[
             { label: "Coached Clients", value: store.clients.length, icon: Users, color: "text-primary bg-sage-light", change: "Diet consulting active" },
             { label: "Diet Plans", value: store.mealPlans.length, icon: Utensils, color: "text-warm bg-orange-50 dark:bg-orange-900/20", change: "Custom recipes created" },
+            { label: "Programs", value: store.wellnessPrograms.length, icon: BookOpen, color: "text-sky-600 bg-sky-50 dark:bg-sky-900/20", change: "Courses and workshops" },
             { label: "Client Success", value: "74%", icon: TrendingUp, color: "text-green-600 bg-green-50 dark:bg-green-900/20", change: "+6% this week" },
             { label: "Ecosystem Rev", value: `$${(user?.revenue || 19200).toLocaleString()}`, icon: DollarSign, color: "text-purple-500 bg-purple-50 dark:bg-purple-900/20", change: "Consultation rates" },
           ].map(({ label, value, icon: Icon, color, change }) => (
@@ -1907,6 +2040,58 @@ function NutritionDashboard({ store, user, activeItem, setActiveModal, setSelect
               ))}
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeItem === "Wellness Programs") {
+    return (
+      <div className="space-y-6 animate-fade-in-up">
+        <div className="flex justify-between items-center gap-4">
+          <div>
+            <h2 className="font-serif text-2xl font-bold text-foreground">Wellness Programs</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">Publish coaching workshops, courses, and guided challenges for clients</p>
+          </div>
+          <button onClick={() => setActiveModal("create_wellness_program")} className="px-4 py-2 text-sm font-semibold rounded-xl bg-sage-gradient text-white shadow-sage flex items-center gap-1">
+            <PlusCircle className="w-4 h-4" /> Create Program
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {store.wellnessPrograms.map((program: WellnessProgram) => (
+            <div key={program.id} className="p-5 rounded-2xl border border-border bg-card min-h-[230px] flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between gap-3 items-start">
+                  <div>
+                    <h4 className="font-semibold text-base text-foreground">{program.title}</h4>
+                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{program.description}</p>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-sage-light text-primary">{program.status}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-5 text-xs">
+                  <div className="p-2 rounded-xl bg-muted/50">
+                    <div className="font-bold text-foreground capitalize">{program.format}</div>
+                    <div className="text-muted-foreground">Format</div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-muted/50">
+                    <div className="font-bold text-foreground">{program.duration}</div>
+                    <div className="text-muted-foreground">Duration</div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-muted/50">
+                    <div className="font-bold text-foreground">${program.price}</div>
+                    <div className="text-muted-foreground">Price</div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between border-t border-border pt-3 mt-4">
+                <span className="text-xs text-muted-foreground">{program.enrolledClients} enrolled clients</span>
+                <button onClick={() => { store.deleteWellnessProgram(program.id); toast.success("Wellness program deleted"); }} className="p-2 rounded-lg border border-red-100 hover:bg-red-50 dark:hover:bg-red-950/10 text-red-500">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
