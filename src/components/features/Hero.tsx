@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Play, Star, Users, BookOpen, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 const stats = [
   { value: "50K+", label: "Active Practitioners", icon: Users },
@@ -60,12 +61,29 @@ export default function Hero() {
               Begin Your Journey
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <button onClick={() => toast.success("Launching YogicTown introduction tour... 🧘")} className="inline-flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-background/80 backdrop-blur-sm border border-border text-foreground font-medium hover:bg-muted transition-all duration-200">
-              <div className="w-8 h-8 rounded-full bg-warm-gradient flex items-center justify-center shadow-warm">
-                <Play className="w-3 h-3 text-white fill-white ml-0.5" />
-              </div>
-              Watch Demo
-            </button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="inline-flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-background/80 backdrop-blur-sm border border-border text-foreground font-medium hover:bg-muted transition-all duration-200">
+                  <div className="w-8 h-8 rounded-full bg-warm-gradient flex items-center justify-center shadow-warm">
+                    <Play className="w-3 h-3 text-white fill-white ml-0.5" />
+                  </div>
+                  Watch Demo
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/95 border-none">
+                <div className="aspect-video w-full">
+                  <iframe 
+                    width="100%" 
+                    height="100%" 
+                    src="https://www.youtube.com/embed/sTANio_2E0Q?autoplay=1" 
+                    title="YogicTown Demo" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
 

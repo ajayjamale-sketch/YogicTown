@@ -132,6 +132,22 @@ export default function FAQSection() {
             );
           })}
         </div>
+
+        {/* Still Have Questions CTA */}
+        <div className="mt-16 text-center max-w-xl mx-auto p-8 rounded-3xl bg-sage-light/50 border border-primary/10">
+          <h3 className="font-serif text-2xl font-semibold text-foreground mb-3">
+            Still have questions?
+          </h3>
+          <p className="text-muted-foreground mb-6">
+            Can't find the answer you're looking for? Please chat to our friendly team.
+          </p>
+          <a
+            href="mailto:support@yogictown.com"
+            className="inline-flex items-center justify-center h-12 px-8 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+          >
+            Get in Touch
+          </a>
+        </div>
       </div>
     </section>
   );

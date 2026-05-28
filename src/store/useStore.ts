@@ -92,6 +92,7 @@ export interface YogaClass {
   students: number;
   type: "Live" | "Private" | "Group";
   status: "scheduled" | "live" | "completed";
+  studentsList?: { name: string; date: string; pending: boolean }[];
 }
 
 export interface MealPlan {
@@ -130,6 +131,22 @@ export interface PendingInstructor {
   verified?: boolean;
 }
 
+export type ManagedUserRole = "user" | "instructor" | "wellness_center" | "nutrition_expert" | "admin";
+export type ManagedUserStatus = "active" | "banned" | "suspended";
+
+export interface ManagedUser {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  role: ManagedUserRole;
+  plan: "free" | "starter" | "pro" | "elite";
+  joinedDate: string;
+  status: ManagedUserStatus;
+  location: string;
+  note?: string;
+}
+
 export interface Comment {
   author: string;
   content: string;
@@ -166,6 +183,19 @@ export interface Challenge {
   daysLeft: number;
   icon: string;
 }
+
+const INITIAL_MANAGED_USERS: ManagedUser[] = [
+  { id: "mu-1", name: "Aria Sharma", email: "aria@yogictown.com", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face", role: "user", plan: "pro", joinedDate: "Jan 2024", status: "active", location: "Bali, Indonesia" },
+  { id: "mu-2", name: "Priya Kavitha", email: "priya@yogictown.com", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face", role: "instructor", plan: "elite", joinedDate: "Mar 2023", status: "active", location: "Rishikesh, India" },
+  { id: "mu-3", name: "Serenity Wellness Hub", email: "hub@serenity.com", avatar: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=80&h=80&fit=crop", role: "wellness_center", plan: "elite", joinedDate: "Jun 2023", status: "active", location: "Ubud, Bali" },
+  { id: "mu-4", name: "Dr. Meera Pillai", email: "meera@yogictown.com", avatar: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=80&h=80&fit=crop&crop=face", role: "nutrition_expert", plan: "pro", joinedDate: "Sep 2023", status: "active", location: "Chennai, India" },
+  { id: "mu-5", name: "James Whitfield", email: "james.w@example.com", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=face", role: "user", plan: "starter", joinedDate: "Feb 2024", status: "active", location: "London, UK" },
+  { id: "mu-6", name: "Sofia Andrade", email: "sofia.a@example.com", avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=80&h=80&fit=crop&crop=face", role: "instructor", plan: "pro", joinedDate: "Nov 2023", status: "active", location: "Lisbon, Portugal" },
+  { id: "mu-7", name: "Chen Wei", email: "chen.w@example.com", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face", role: "user", plan: "free", joinedDate: "Apr 2024", status: "suspended", location: "Shanghai, China", note: "Multiple policy violations reported." },
+  { id: "mu-8", name: "Kavita Sharma", email: "kavita.s@example.com", avatar: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=80&h=80&fit=crop&crop=face", role: "user", plan: "free", joinedDate: "May 2024", status: "banned", location: "Delhi, India", note: "Permanent ban: spam." },
+  { id: "mu-9", name: "Arjun Mehta", email: "arjun.m@example.com", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face", role: "instructor", plan: "pro", joinedDate: "Dec 2022", status: "active", location: "Mumbai, India" },
+  { id: "mu-10", name: "Luna Park", email: "luna.p@example.com", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face", role: "user", plan: "elite", joinedDate: "Jan 2023", status: "active", location: "Seoul, South Korea" },
+];
 
 // Initial Mock Data
 const INITIAL_PROGRAMS: Program[] = [
@@ -338,6 +368,7 @@ interface AppState {
   // Admin Dashboard
   pendingInstructors: PendingInstructor[];
   suspendedUsers: string[];
+  managedUsers: ManagedUser[];
 
   // Community Feed
   posts: Post[];
@@ -355,6 +386,7 @@ interface AppState {
   toggleWishlistRetreat: (id: number) => void;
   addWater: (amount: number) => void;
   toggleHabit: (id: string) => void;
+  addHabit: (name: string) => void;
 
   // Bookings / Retreat Organizer Actions
   bookRetreat: (retreatId: number, userDetails: { name: string; email: string }) => void;
@@ -369,7 +401,7 @@ interface AppState {
   editClass: (id: string, cls: Partial<YogaClass>) => void;
   deleteClass: (id: string) => void;
   startClassSession: (id: string) => void;
-  approveStudent: (studentName: string) => void;
+  approveStudent: (classId: string, studentName: string) => void;
   uploadCertificate: (certName: string) => void;
 
   // Nutrition Actions
@@ -384,6 +416,15 @@ interface AppState {
   suspendUser: (name: string) => void;
   deleteContent: (postId: number) => void;
   approveRetreat: (retreatId: number) => void;
+  // User Management Actions
+  banManagedUser: (id: string) => void;
+  unbanManagedUser: (id: string) => void;
+  suspendManagedUser: (id: string) => void;
+  deleteManagedUser: (id: string) => void;
+  changeManagedUserRole: (id: string, role: ManagedUserRole) => void;
+  changeManagedUserPlan: (id: string, plan: "free" | "starter" | "pro" | "elite") => void;
+  updateManagedUserNote: (id: string, note: string) => void;
+  addManagedUser: (user: Omit<ManagedUser, "id">) => void;
 
   // Community Actions
   createPost: (content: string, groupName: string | null, img: string | null) => void;
@@ -434,9 +475,9 @@ export const useStore = create<AppState>()(
 
       // Instructor Classes
       classes: [
-        { id: "c-1", name: "Morning Vinyasa Live", instructorId: "demo-instructor-1", time: "Tomorrow 7:00 AM", students: 24, type: "Live", status: "scheduled" },
-        { id: "c-2", name: "1-on-1 Alignment Clinic", instructorId: "demo-instructor-1", time: "Wed 3:00 PM", students: 1, type: "Private", status: "scheduled" },
-        { id: "c-3", name: "Restorative Yin Flow", instructorId: "demo-instructor-1", time: "Thu 6:30 PM", students: 18, type: "Group", status: "scheduled" }
+        { id: "c-1", name: "Morning Vinyasa Live", instructorId: "demo-instructor-1", time: "Tomorrow 7:00 AM", students: 4, type: "Live", status: "scheduled", studentsList: [{name: "Aria Sharma", date: "Pending approval", pending: true}, {name: "John Doe", date: "Registered yesterday", pending: false}, {name: "Sara Chen", date: "Registered yesterday", pending: false}, {name: "Priya K.", date: "Registered yesterday", pending: false}] },
+        { id: "c-2", name: "1-on-1 Alignment Clinic", instructorId: "demo-instructor-1", time: "Wed 3:00 PM", students: 1, type: "Private", status: "scheduled", studentsList: [{name: "Michael B.", date: "Pending approval", pending: true}] },
+        { id: "c-3", name: "Restorative Yin Flow", instructorId: "demo-instructor-1", time: "Thu 6:30 PM", students: 2, type: "Group", status: "scheduled", studentsList: [{name: "David Lee", date: "Registered today", pending: false}, {name: "Alex M.", date: "Registered recently", pending: false}] }
       ],
       certifications: ["RYT-500", "Yin Yoga TTC"],
 
@@ -462,6 +503,7 @@ export const useStore = create<AppState>()(
         { name: "Anaya Das", specialty: "Prenatal Yoga", img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=60&h=60&fit=crop&crop=face", date: "1 day ago" }
       ],
       suspendedUsers: [],
+      managedUsers: INITIAL_MANAGED_USERS,
 
       // Community Feed
       posts: [
@@ -587,6 +629,11 @@ export const useStore = create<AppState>()(
         const { habits } = get();
         const updated = habits.map((h) => (h.id === id ? { ...h, completed: !h.completed } : h));
         set({ habits: updated });
+      },
+
+      addHabit: (name) => {
+        const { habits } = get();
+        set({ habits: [...habits, { id: `h-${Date.now()}`, name, completed: false }] });
       },
 
       // Booking / Retreat actions
@@ -719,8 +766,19 @@ export const useStore = create<AppState>()(
         set({ classes: updated });
       },
 
-      approveStudent: (studentName) => {
-        const { user } = get();
+      approveStudent: (classId, studentName) => {
+        const { classes, user } = get();
+        const updatedClasses = classes.map(c => {
+          if (c.id === classId && c.studentsList) {
+            return {
+              ...c,
+              studentsList: c.studentsList.map(s => s.name === studentName ? { ...s, pending: false, date: "Approved" } : s)
+            };
+          }
+          return c;
+        });
+        set({ classes: updatedClasses });
+        
         if (user) {
           set({ user: { ...user, studentsCount: (user.studentsCount || 0) + 1 } });
         }
@@ -804,6 +862,41 @@ export const useStore = create<AppState>()(
         const { retreats } = get();
         const updated = retreats.map((r) => (r.id === retreatId ? { ...r, approved: true } : r));
         set({ retreats: updated });
+      },
+
+      // User Management Actions
+      banManagedUser: (id) => {
+        const { managedUsers } = get();
+        set({ managedUsers: managedUsers.map((u) => u.id === id ? { ...u, status: "banned" as ManagedUserStatus } : u) });
+      },
+      unbanManagedUser: (id) => {
+        const { managedUsers } = get();
+        set({ managedUsers: managedUsers.map((u) => u.id === id ? { ...u, status: "active" as ManagedUserStatus } : u) });
+      },
+      suspendManagedUser: (id) => {
+        const { managedUsers } = get();
+        set({ managedUsers: managedUsers.map((u) => u.id === id ? { ...u, status: "suspended" as ManagedUserStatus } : u) });
+      },
+      deleteManagedUser: (id) => {
+        const { managedUsers } = get();
+        set({ managedUsers: managedUsers.filter((u) => u.id !== id) });
+      },
+      changeManagedUserRole: (id, role) => {
+        const { managedUsers } = get();
+        set({ managedUsers: managedUsers.map((u) => u.id === id ? { ...u, role } : u) });
+      },
+      changeManagedUserPlan: (id, plan) => {
+        const { managedUsers } = get();
+        set({ managedUsers: managedUsers.map((u) => u.id === id ? { ...u, plan } : u) });
+      },
+      updateManagedUserNote: (id, note) => {
+        const { managedUsers } = get();
+        set({ managedUsers: managedUsers.map((u) => u.id === id ? { ...u, note } : u) });
+      },
+      addManagedUser: (userData) => {
+        const { managedUsers } = get();
+        const newUser: ManagedUser = { ...userData, id: `mu-${Date.now()}` };
+        set({ managedUsers: [newUser, ...managedUsers] });
       },
 
       // Community Actions
@@ -894,7 +987,7 @@ export const useStore = create<AppState>()(
       },
     }),
     {
-      name: "yogictown-state-v1",
+      name: "yogictown-state-v2",
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
@@ -917,11 +1010,24 @@ export const useStore = create<AppState>()(
         consultations: state.consultations,
         pendingInstructors: state.pendingInstructors,
         suspendedUsers: state.suspendedUsers,
+        managedUsers: state.managedUsers,
         posts: state.posts,
         joinedGroups: state.joinedGroups,
         likedPosts: state.likedPosts,
         joinedChallenges: state.joinedChallenges,
       }),
+      merge: (persistedState: any, currentState: any) => {
+        if (persistedState?.classes) {
+          persistedState.classes = persistedState.classes.map((c: any) => {
+            if (!c.studentsList) {
+              const defaultClass = currentState.classes.find((dc: any) => dc.id === c.id);
+              return { ...c, studentsList: defaultClass ? defaultClass.studentsList : [] };
+            }
+            return c;
+          });
+        }
+        return { ...currentState, ...persistedState };
+      },
     }
   )
 );

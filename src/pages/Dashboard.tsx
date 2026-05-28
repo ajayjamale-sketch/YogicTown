@@ -10,11 +10,12 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useStore, Program, Retreat, YogaClass, MealPlan, Consultation } from "@/store/useStore";
+import { useStore, Program, Retreat, YogaClass, MealPlan, Consultation, ManagedUser } from "@/store/useStore";
 import { cn } from "@/lib/utils";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { useScrollTop } from "@/hooks/useScrollTop";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 
 export default function Dashboard() {
   useScrollTop();
@@ -57,6 +58,7 @@ export default function Dashboard() {
     ],
     admin: [
       { icon: LayoutDashboard, label: "Overview" },
+      { icon: Users, label: "User Management" },
       { icon: UserCheck, label: "Verification Queue" },
       { icon: ShieldCheck, label: "Moderation Console" },
     ],
@@ -102,6 +104,17 @@ export default function Dashboard() {
 
   const [suspendName, setSuspendName] = useState("");
 
+  // User Management form states
+  const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
+  const [editUserRole, setEditUserRole] = useState<ManagedUser["role"]>("user");
+  const [editUserPlan, setEditUserPlan] = useState<ManagedUser["plan"]>("free");
+  const [editUserNote, setEditUserNote] = useState("");
+  const [addUserName, setAddUserName] = useState("");
+  const [addUserEmail, setAddUserEmail] = useState("");
+  const [addUserRole, setAddUserRole] = useState<ManagedUser["role"]>("user");
+  const [addUserPlan, setAddUserPlan] = useState<ManagedUser["plan"]>("free");
+  const [addUserLocation, setAddUserLocation] = useState("");
+
   // Sync form states with editing objects
   useEffect(() => {
     if (activeModal === "profile" && user) {
@@ -122,6 +135,12 @@ export default function Dashboard() {
     } else if (activeModal === "progress" && selectedItem) {
       setActiveClientName(selectedItem.name);
       setClientProgressVal(selectedItem.progress);
+    } else if (activeModal === "edit_managed_user" && selectedItem?.id) {
+      // selectedItem is the ManagedUser object set by the table row
+      setEditingUser(selectedItem as ManagedUser);
+      setEditUserRole(selectedItem.role);
+      setEditUserPlan(selectedItem.plan);
+      setEditUserNote(selectedItem.note || "");
     }
   }, [activeModal, selectedItem, user]);
 
@@ -253,6 +272,42 @@ export default function Dashboard() {
       setSuspendName("");
       toast.warning(`User ${suspendName} has been suspended immediately.`);
     }, 600);
+  };
+
+  const handleSaveEditManagedUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setModalLoading(true);
+    setTimeout(() => {
+      store.changeManagedUserRole(editingUser.id, editUserRole);
+      store.changeManagedUserPlan(editingUser.id, editUserPlan);
+      store.updateManagedUserNote(editingUser.id, editUserNote);
+      setModalLoading(false);
+      setActiveModal(null);
+      setEditingUser(null);
+      toast.success(`User "${editingUser.name}" updated successfully!`);
+    }, 500);
+  };
+
+  const handleAddManagedUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    setModalLoading(true);
+    setTimeout(() => {
+      store.addManagedUser({
+        name: addUserName,
+        email: addUserEmail,
+        avatar: `https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face`,
+        role: addUserRole,
+        plan: addUserPlan,
+        joinedDate: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+        status: "active",
+        location: addUserLocation,
+      });
+      setModalLoading(false);
+      setActiveModal(null);
+      setAddUserName(""); setAddUserEmail(""); setAddUserLocation("");
+      toast.success(`User "${addUserName}" added to platform!`);
+    }, 500);
   };
 
   const renderDashboard = () => {
@@ -691,6 +746,105 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Edit Managed User Modal */}
+      {activeModal === "edit_managed_user" && editingUser && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <form onSubmit={handleSaveEditManagedUser} className="bg-card border border-border rounded-3xl p-6 max-w-md w-full shadow-2xl animate-fade-in space-y-4">
+            <div className="flex items-center gap-3 pb-2 border-b border-border">
+              <img src={editingUser.avatar} alt={editingUser.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/30" />
+              <div>
+                <h3 className="font-serif text-lg font-bold text-foreground">{editingUser.name}</h3>
+                <p className="text-xs text-muted-foreground">{editingUser.email} · Joined {editingUser.joinedDate}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Platform Role</label>
+                <select value={editUserRole} onChange={e => setEditUserRole(e.target.value as ManagedUser["role"])} className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="user">Wellness User</option>
+                  <option value="instructor">Instructor</option>
+                  <option value="wellness_center">Wellness Center</option>
+                  <option value="nutrition_expert">Nutrition Expert</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Subscription Plan</label>
+                <select value={editUserPlan} onChange={e => setEditUserPlan(e.target.value as ManagedUser["plan"])} className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="free">Free</option>
+                  <option value="starter">Starter</option>
+                  <option value="pro">Pro</option>
+                  <option value="elite">Elite</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Admin Note</label>
+              <textarea value={editUserNote} onChange={e => setEditUserNote(e.target.value)} rows={2} placeholder="Internal notes about this user..." className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => { setActiveModal(null); setEditingUser(null); }} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-all">Cancel</button>
+              <button type="submit" disabled={modalLoading} className="flex-1 py-2.5 rounded-xl bg-sage-gradient text-white text-sm font-semibold shadow-sage hover:opacity-90 transition-all flex items-center justify-center">
+                {modalLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Save Changes"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Add New User Modal */}
+      {activeModal === "add_user" && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <form onSubmit={handleAddManagedUser} className="bg-card border border-border rounded-3xl p-6 max-w-md w-full shadow-2xl animate-fade-in space-y-4">
+            <h3 className="font-serif text-xl font-bold text-foreground">Add New Platform User</h3>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Full Name</label>
+              <input required value={addUserName} onChange={e => setAddUserName(e.target.value)} placeholder="e.g. Anaya Krishnan" className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Email Address</label>
+              <input required type="email" value={addUserEmail} onChange={e => setAddUserEmail(e.target.value)} placeholder="e.g. anaya@example.com" className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Location</label>
+              <input value={addUserLocation} onChange={e => setAddUserLocation(e.target.value)} placeholder="e.g. Mumbai, India" className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Role</label>
+                <select value={addUserRole} onChange={e => setAddUserRole(e.target.value as ManagedUser["role"])} className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="user">Wellness User</option>
+                  <option value="instructor">Instructor</option>
+                  <option value="wellness_center">Wellness Center</option>
+                  <option value="nutrition_expert">Nutrition Expert</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Plan</label>
+                <select value={addUserPlan} onChange={e => setAddUserPlan(e.target.value as ManagedUser["plan"])} className="w-full px-3 py-2 border border-input rounded-xl bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="free">Free</option>
+                  <option value="starter">Starter</option>
+                  <option value="pro">Pro</option>
+                  <option value="elite">Elite</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setActiveModal(null)} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-all">Cancel</button>
+              <button type="submit" disabled={modalLoading} className="flex-1 py-2.5 rounded-xl bg-sage-gradient text-white text-sm font-semibold shadow-sage hover:opacity-90 transition-all flex items-center justify-center">
+                {modalLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Add User"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* Reports Modal */}
       {activeModal === "reports" && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -822,9 +976,42 @@ function UserDashboard({ store, user, activeItem, setActiveModal, navigate }: an
           {/* Habit Tracker list */}
           <div className="p-6 rounded-2xl bg-card border border-border flex flex-col justify-between">
             <div>
-              <h3 className="font-semibold text-foreground mb-4">Habit Checklist</h3>
-              <div className="space-y-3.5">
-                {store.habits.slice(0, 3).map((h: any) => (
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-foreground">Habit Checklist</h3>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="text-xs font-medium text-primary bg-sage-light px-2 py-1 rounded-md hover:opacity-80">
+                      + Add
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+                    <div className="p-6 bg-background">
+                      <h3 className="font-semibold text-lg mb-4 text-foreground">Add New Habit</h3>
+                      <input id="newHabitInput" type="text" placeholder="e.g. 10 Min Meditation" className="w-full p-3 border border-border bg-card text-foreground rounded-xl mb-6 focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                      <div className="flex justify-end gap-3">
+                        <DialogClose asChild>
+                          <button className="px-4 py-2.5 bg-muted text-muted-foreground rounded-xl text-sm font-semibold hover:bg-muted/80">
+                            Cancel
+                          </button>
+                        </DialogClose>
+                        <DialogClose asChild>
+                          <button onClick={() => {
+                            const input = document.getElementById("newHabitInput") as HTMLInputElement;
+                            if (input?.value) {
+                              store.addHabit(input.value);
+                              toast.success("Habit added successfully!");
+                            }
+                          }} className="px-5 py-2.5 bg-sage-gradient text-white rounded-xl text-sm font-semibold shadow-sage hover:opacity-90">
+                            Save Habit
+                          </button>
+                        </DialogClose>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <div className="space-y-3.5 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                {store.habits.map((h: any) => (
                   <div key={h.id} className="flex items-center justify-between">
                     <span className={cn("text-sm transition-colors", h.completed ? "line-through text-muted-foreground" : "text-foreground font-medium")}>{h.name}</span>
                     <button onClick={() => handleHabitToggle(h.id, h.name)} className={cn("w-6 h-6 rounded-lg flex items-center justify-center border transition-all", h.completed ? "bg-primary border-primary text-white" : "border-input hover:border-primary")}>
@@ -897,9 +1084,39 @@ function UserDashboard({ store, user, activeItem, setActiveModal, navigate }: an
                         <div className="bg-primary h-2 rounded-full transition-all duration-300" style={{ width: `${percent}%` }} />
                       </div>
                     </div>
-                    <button onClick={() => handleContinueSession(course)} className="w-full py-2.5 rounded-xl bg-sage-gradient text-white text-xs font-semibold shadow-sage hover:opacity-90 transition-all">
-                      Log Today's Practice Session
-                    </button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button className="w-full py-2.5 rounded-xl bg-sage-gradient text-white text-xs font-semibold shadow-sage hover:opacity-90 transition-all">
+                          Log Today's Practice Session
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/95 border-none">
+                        <div className="p-4 bg-background border-b border-border flex justify-between items-center">
+                          <h3 className="font-semibold">{course.title} - Session {(store.programProgress[course.id] || 0) + 1}</h3>
+                        </div>
+                        <div className="aspect-video w-full">
+                          <iframe 
+                            width="100%" 
+                            height="100%" 
+                            src="https://www.youtube.com/embed/sTANio_2E0Q?autoplay=1" 
+                            title="Practice Session" 
+                            frameBorder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowFullScreen
+                          ></iframe>
+                        </div>
+                        <div className="p-4 bg-background flex justify-end">
+                          <DialogClose asChild>
+                            <button 
+                              onClick={() => handleContinueSession(course)} 
+                              className="px-6 py-2.5 rounded-xl bg-sage-gradient text-white font-semibold hover:opacity-90 transition-all"
+                            >
+                              Complete Session
+                            </button>
+                          </DialogClose>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               );
@@ -995,13 +1212,46 @@ function UserDashboard({ store, user, activeItem, setActiveModal, navigate }: an
           <div className="p-6 rounded-2xl bg-card border border-border flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-foreground">Habits Checklist</h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="font-semibold text-foreground">Habits Checklist</h3>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="text-xs font-medium text-primary bg-sage-light px-2 py-1 rounded-md hover:opacity-80">
+                        + Add
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+                      <div className="p-6 bg-background">
+                        <h3 className="font-semibold text-lg mb-4 text-foreground">Add New Habit</h3>
+                        <input id="newHabitInputTracker" type="text" placeholder="e.g. 10 Min Meditation" className="w-full p-3 border border-border bg-card text-foreground rounded-xl mb-6 focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                        <div className="flex justify-end gap-3">
+                          <DialogClose asChild>
+                            <button className="px-4 py-2.5 bg-muted text-muted-foreground rounded-xl text-sm font-semibold hover:bg-muted/80">
+                              Cancel
+                            </button>
+                          </DialogClose>
+                          <DialogClose asChild>
+                            <button onClick={() => {
+                              const input = document.getElementById("newHabitInputTracker") as HTMLInputElement;
+                              if (input?.value) {
+                                store.addHabit(input.value);
+                                toast.success("Habit added successfully!");
+                              }
+                            }} className="px-5 py-2.5 bg-sage-gradient text-white rounded-xl text-sm font-semibold shadow-sage hover:opacity-90">
+                              Save Habit
+                            </button>
+                          </DialogClose>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <span className="text-xs font-semibold text-primary">{progressPercent}% Completed</span>
               </div>
               <div className="w-full bg-muted rounded-full h-1.5 mb-5">
                 <div className="bg-primary h-1.5 rounded-full transition-all duration-300" style={{ width: `${progressPercent}%` }} />
               </div>
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                 {store.habits.map((h: any) => (
                   <div key={h.id} className="flex items-center justify-between">
                     <span className={cn("text-sm transition-all", h.completed ? "line-through text-muted-foreground" : "text-foreground font-medium")}>{h.name}</span>
@@ -1093,6 +1343,7 @@ function UserDashboard({ store, user, activeItem, setActiveModal, navigate }: an
 // SUB-DASHBOARD: YOGA INSTRUCTOR
 // =============================================================
 function InstructorDashboard({ store, user, activeItem, setActiveModal, setSelectedItem }: any) {
+  const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
   const upcoming = store.classes.filter((c: YogaClass) => c.status !== "completed");
   const revenueData = [
     { m: "Jan", v: 1200 }, { m: "Feb", v: 1500 }, { m: "Mar", v: 1800 },
@@ -1109,8 +1360,8 @@ function InstructorDashboard({ store, user, activeItem, setActiveModal, setSelec
     toast.success(`Class "${name}" is now live! Streaming started 🔴`);
   };
 
-  const handleApproveStudent = (name: string) => {
-    store.approveStudent(name);
+  const handleApproveStudent = (classId: string, name: string) => {
+    store.approveStudent(classId, name);
     toast.success(`Approved registration for ${name}!`);
   };
 
@@ -1260,27 +1511,64 @@ function InstructorDashboard({ store, user, activeItem, setActiveModal, setSelec
     return (
       <div className="space-y-6 animate-fade-in-up">
         <div>
-          <h2 className="font-serif text-2xl font-bold text-foreground">Active & Pending Student Registrations</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Approve registration requests for Vinyasa Live and 1-on-1 aligns</p>
+          <h2 className="font-serif text-2xl font-bold text-foreground">Class-wise Student List</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage enrolled and pending students for your upcoming classes</p>
         </div>
 
-        <div className="p-6 rounded-2xl bg-card border border-border">
-          <div className="space-y-4">
-            {[
-              { name: "John Doe", class: "Morning Vinyasa", date: "Applied today" },
-              { name: "Aria Sharma", class: "Restorative Yin Flow", date: "Applied yesterday" }
-            ].map(stud => (
-              <div key={stud.name} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <div>
-                  <div className="text-sm font-semibold text-foreground">{stud.name}</div>
-                  <div className="text-xs text-muted-foreground">Class: {stud.class} · {stud.date}</div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {store.classes.map((cls: YogaClass) => {
+            const studentsList = cls.studentsList || [];
+            const isExpanded = expandedClasses[cls.id];
+            const displayList = isExpanded ? studentsList : studentsList.slice(0, 3);
+
+            return (
+              <div key={cls.id} className="p-6 rounded-2xl bg-card border border-border shadow-sm flex flex-col h-full">
+                <div className="mb-4 border-b border-border pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <div>
+                    <h3 className="font-semibold text-lg text-foreground line-clamp-1">{cls.name}</h3>
+                    <div className="text-xs text-muted-foreground mt-1">{cls.time}</div>
+                  </div>
+                  <span className="text-xs text-primary font-semibold bg-sage-light px-2.5 py-1 rounded-md whitespace-nowrap">{studentsList.length} Enrolled</span>
                 </div>
-                <button onClick={() => handleApproveStudent(stud.name)} className="px-3 py-1 text-xs font-semibold rounded-lg bg-sage-light text-primary hover:bg-primary hover:text-white transition-all">
-                  Approve Registration
-                </button>
+                
+                {studentsList.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center py-8">
+                    <p className="text-sm text-muted-foreground italic">No students registered yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    {displayList.map((stud, idx) => (
+                      <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-3 border-b border-border/50 last:border-0 gap-3">
+                        <div className="flex items-center gap-3 w-full">
+                          <div className="w-10 h-10 flex-shrink-0 rounded-full bg-sage-light flex items-center justify-center text-primary font-bold text-sm uppercase shadow-sm">
+                            {stud.name.slice(0, 2)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-foreground truncate">{stud.name}</div>
+                            <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{stud.date}</div>
+                          </div>
+                        </div>
+                        {stud.pending ? (
+                          <button onClick={() => handleApproveStudent(cls.id, stud.name)} className="flex-shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-sage-gradient text-white shadow-sage hover:opacity-90 transition-all">
+                            Approve
+                          </button>
+                        ) : (
+                          <span className="flex-shrink-0 text-[10px] font-medium text-green-600 bg-green-50 border border-green-100 px-2.5 py-1 rounded-full uppercase tracking-wider">Enrolled</span>
+                        )}
+                      </div>
+                    ))}
+                    {studentsList.length > 3 && (
+                      <div className="text-center pt-3 mt-1 border-t border-border/50">
+                        <button onClick={() => setExpandedClasses(prev => ({ ...prev, [cls.id]: !prev[cls.id] }))} className="text-xs text-primary font-semibold hover:underline">
+                          {isExpanded ? "Show less" : `View all ${studentsList.length} students`}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -1634,6 +1922,15 @@ function AdminDashboard({ store, user, activeItem, setActiveModal, setSelectedIt
   const pending = store.pendingInstructors.filter((ins: any) => !ins.verified);
   const pendingRetreats = store.retreats.filter((r: any) => !r.approved);
   const activeInstructorsCount = 248 + store.pendingInstructors.filter((ins: any) => ins.verified).length;
+  const [umSearch, setUmSearch] = useState("");
+  const [umFilter, setUmFilter] = useState<"all" | "active" | "suspended" | "banned">("all");
+  const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
+
+  const openEditUser = (u: ManagedUser) => {
+    setEditingUser(u);
+    setSelectedItem({ _editingUser: u });
+    setActiveModal("edit_managed_user");
+  };
 
   const handleVerify = (name: string) => {
     store.verifyInstructor(name);
@@ -1699,6 +1996,237 @@ function AdminDashboard({ store, user, activeItem, setActiveModal, setSelectedIt
               <BarChart3 className="w-6 h-6 text-primary" />
               <span className="text-xs font-bold text-foreground">Platform Reports</span>
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeItem === "User Management") {
+    const allUsers: ManagedUser[] = store.managedUsers || [];
+    const filtered = allUsers.filter((u: ManagedUser) => {
+      const matchSearch =
+        u.name.toLowerCase().includes(umSearch.toLowerCase()) ||
+        u.email.toLowerCase().includes(umSearch.toLowerCase()) ||
+        u.location.toLowerCase().includes(umSearch.toLowerCase());
+      const matchFilter = umFilter === "all" || u.status === umFilter;
+      return matchSearch && matchFilter;
+    });
+
+    const activeCount = allUsers.filter((u: ManagedUser) => u.status === "active").length;
+    const suspendedCount = allUsers.filter((u: ManagedUser) => u.status === "suspended").length;
+    const bannedCount = allUsers.filter((u: ManagedUser) => u.status === "banned").length;
+
+    const roleBadge: Record<string, { label: string; cls: string }> = {
+      user: { label: "User", cls: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" },
+      instructor: { label: "Instructor", cls: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" },
+      wellness_center: { label: "Center", cls: "bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400" },
+      nutrition_expert: { label: "Nutrition", cls: "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" },
+      admin: { label: "Admin", cls: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" },
+    };
+
+    const planBadge: Record<string, string> = {
+      free: "bg-muted text-muted-foreground",
+      starter: "bg-sky-100 text-sky-600 dark:bg-sky-900/30",
+      pro: "bg-violet-100 text-violet-600 dark:bg-violet-900/30",
+      elite: "bg-amber-100 text-amber-600 dark:bg-amber-900/30",
+    };
+
+    const statusBadge: Record<string, string> = {
+      active: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+      suspended: "bg-amber-100 text-amber-600 dark:bg-amber-900/30",
+      banned: "bg-red-100 text-red-600 dark:bg-red-900/30",
+    };
+
+    return (
+      <div className="space-y-6 animate-fade-in-up">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="font-serif text-2xl lg:text-3xl font-bold text-foreground">User Management 👥</h1>
+            <p className="text-muted-foreground mt-1 text-sm">Manage accounts, roles, plans and access levels across the platform</p>
+          </div>
+          <button
+            onClick={() => setActiveModal("add_user")}
+            className="px-4 py-2.5 text-sm font-semibold rounded-xl bg-sage-gradient text-white shadow-sage hover:opacity-90 transition-all flex items-center gap-2 self-start sm:self-auto"
+          >
+            <PlusCircle className="w-4 h-4" /> Add New User
+          </button>
+        </div>
+
+        {/* Summary Stat Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Total Users", value: allUsers.length, icon: Users, color: "text-primary bg-sage-light", sub: "All roles combined" },
+            { label: "Active", value: activeCount, icon: CheckCircle, color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20", sub: "In good standing" },
+            { label: "Suspended", value: suspendedCount, icon: AlertCircle, color: "text-amber-600 bg-amber-50 dark:bg-amber-900/20", sub: "Temporary restriction" },
+            { label: "Banned", value: bannedCount, icon: ShieldAlert, color: "text-red-500 bg-red-50 dark:bg-red-900/20", sub: "Permanently locked" },
+          ].map(({ label, value, icon: Icon, color, sub }) => (
+            <div key={label} className="p-5 rounded-2xl bg-card border border-border hover:shadow-md hover:-translate-y-0.5 transition-all">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${color}`}><Icon className="w-5 h-5" /></div>
+              <div className="font-serif text-2xl font-bold text-foreground">{value}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
+              <div className="text-xs text-muted-foreground mt-1">{sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Search & Filter Bar */}
+        <div className="p-5 rounded-2xl bg-card border border-border space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                value={umSearch}
+                onChange={e => setUmSearch(e.target.value)}
+                placeholder="Search by name, email, or location…"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-input bg-muted text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Filter Tabs */}
+          <div className="flex gap-2 flex-wrap">
+            {(["all", "active", "suspended", "banned"] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setUmFilter(f)}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-all border",
+                  umFilter === f
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-border text-muted-foreground hover:bg-muted"
+                )}
+              >
+                {f === "all" ? `All (${allUsers.length})` : f === "active" ? `Active (${activeCount})` : f === "suspended" ? `Suspended (${suspendedCount})` : `Banned (${bannedCount})`}
+              </button>
+            ))}
+            {umSearch && (
+              <button onClick={() => setUmSearch("")} className="px-3 py-1.5 rounded-full text-xs font-semibold border border-border text-muted-foreground hover:bg-muted flex items-center gap-1">
+                <X className="w-3 h-3" /> Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Users Table */}
+        <div className="rounded-2xl bg-card border border-border overflow-hidden">
+          {filtered.length === 0 ? (
+            <div className="py-16 text-center text-muted-foreground text-sm">
+              <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              No users match your search or filter.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-xs text-muted-foreground border-b border-border text-left bg-muted/40">
+                    <th className="px-5 py-3.5 font-semibold">User</th>
+                    <th className="px-4 py-3.5 font-semibold">Role</th>
+                    <th className="px-4 py-3.5 font-semibold">Plan</th>
+                    <th className="px-4 py-3.5 font-semibold">Status</th>
+                    <th className="px-4 py-3.5 font-semibold">Location</th>
+                    <th className="px-4 py-3.5 font-semibold">Joined</th>
+                    <th className="px-5 py-3.5 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((u: ManagedUser) => (
+                    <tr key={u.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors group">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="relative flex-shrink-0">
+                            <img src={u.avatar} alt={u.name} className="w-9 h-9 rounded-full object-cover ring-2 ring-border" />
+                            <span className={cn(
+                              "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card",
+                              u.status === "active" ? "bg-emerald-500" : u.status === "suspended" ? "bg-amber-500" : "bg-red-500"
+                            )} />
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold text-foreground leading-tight">{u.name}</div>
+                            <div className="text-xs text-muted-foreground">{u.email}</div>
+                            {u.note && (
+                              <div className="text-[10px] text-amber-600 mt-0.5 truncate max-w-[180px]">📌 {u.note}</div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-bold uppercase", roleBadge[u.role]?.cls)}>
+                          {roleBadge[u.role]?.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-bold uppercase", planBadge[u.plan])}>
+                          {u.plan}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className={cn("text-[10px] px-2.5 py-0.5 rounded-full font-bold capitalize", statusBadge[u.status])}>
+                          {u.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-xs text-muted-foreground">{u.location}</td>
+                      <td className="px-4 py-3.5 text-xs text-muted-foreground">{u.joinedDate}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Edit button */}
+                          <button
+                            onClick={() => { setSelectedItem(u); setActiveModal("edit_managed_user"); }}
+                            className="p-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+                            title="Edit user"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          {/* Ban / Unban / Suspend */}
+                          {u.status === "active" && (
+                            <>
+                              <button
+                                onClick={() => { store.suspendManagedUser(u.id); toast.warning(`${u.name} suspended.`); }}
+                                className="px-2.5 py-1 rounded-lg border border-amber-200 text-amber-600 text-[10px] font-semibold hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all"
+                              >
+                                Suspend
+                              </button>
+                              <button
+                                onClick={() => { store.banManagedUser(u.id); toast.error(`${u.name} has been banned.`); }}
+                                className="px-2.5 py-1 rounded-lg border border-red-200 text-red-500 text-[10px] font-semibold hover:bg-red-50 dark:hover:bg-red-900/10 transition-all"
+                              >
+                                Ban
+                              </button>
+                            </>
+                          )}
+                          {(u.status === "suspended" || u.status === "banned") && (
+                            <button
+                              onClick={() => { store.unbanManagedUser(u.id); toast.success(`${u.name} reinstated as active user.`); }}
+                              className="px-2.5 py-1 rounded-lg border border-emerald-200 text-emerald-600 text-[10px] font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-all"
+                            >
+                              Reinstate
+                            </button>
+                          )}
+                          {/* Delete */}
+                          <button
+                            onClick={() => {
+                              if (confirm(`Permanently delete account for "${u.name}"?`)) {
+                                store.deleteManagedUser(u.id);
+                                toast.success(`${u.name}'s account deleted.`);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg border border-red-100 hover:bg-red-50 dark:hover:bg-red-900/10 text-red-400 hover:text-red-600 transition-all"
+                            title="Delete user"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="px-5 py-3 border-t border-border bg-muted/20 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Showing {filtered.length} of {allUsers.length} users</span>
+            <span className="text-xs text-muted-foreground">Last updated: just now</span>
           </div>
         </div>
       </div>
