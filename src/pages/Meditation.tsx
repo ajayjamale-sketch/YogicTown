@@ -283,18 +283,18 @@ export default function Meditation() {
                     </p>
 
                     <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white dark:bg-gray-800 text-foreground font-semibold border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow transition-all duration-200">
-  {playing === sessions[0].id ? (
-    <>
-      <Pause className="w-4 h-4" />
-      Pause
-    </>
-  ) : (
-    <>
-      <Play className="w-4 h-4 fill-foreground" />
-      Start Session
-    </>
-  )}
-</button>
+                      {playing === sessions[0].id ? (
+                        <>
+                          <Pause className="w-4 h-4" />
+                          Pause
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4 fill-foreground" />
+                          Start Session
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
