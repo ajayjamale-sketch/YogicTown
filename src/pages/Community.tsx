@@ -9,13 +9,15 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 export default function Community() {
-  useIntersectionObserver();
   const [activeTab, setActiveTab] = useState("feed");
   const [search, setSearch] = useState("");
+  const [selectedFeedGroup, setSelectedFeedGroup] = useState("All");
+  
+  useIntersectionObserver(0.15, [activeTab, search, selectedFeedGroup]);
   const [newPost, setNewPost] = useState("");
   const [showPostBox, setShowPostBox] = useState(false);
   const [selectedGroupForNewPost, setSelectedGroupForNewPost] = useState("General Wellness");
-  const [selectedFeedGroup, setSelectedFeedGroup] = useState("All");
+
   
   // Comment UI state
   const [commentTexts, setCommentTexts] = useState<Record<number, string>>({});

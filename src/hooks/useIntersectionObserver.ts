@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export const useIntersectionObserver = (threshold = 0.15) => {
+export const useIntersectionObserver = (threshold = 0.15, deps: any[] = []) => {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export const useIntersectionObserver = (threshold = 0.15) => {
     elements.forEach((el) => observer.observe(el));
 
     return () => observer.disconnect();
-  }, [threshold]);
+  }, [threshold, ...deps]);
 
   return ref;
 };

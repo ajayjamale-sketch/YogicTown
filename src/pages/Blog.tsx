@@ -5,19 +5,13 @@ import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 
 const categories = ["All", "Yoga", "Meditation", "Nutrition", "Wellness", "Retreats", "Breathwork"];
 
-const posts = [
-  { id: 1, title: "10 Morning Yoga Poses to Start Your Day With Clarity", excerpt: "Transform your mornings with this energising sequence that wakes the body, calms the mind, and sets a positive tone for the entire day ahead.", category: "Yoga", readTime: "6 min", author: "Priya Kapoor", date: "May 18, 2025", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=400&fit=crop", featured: true, tags: ["morning", "beginners"] },
-  { id: 2, title: "The Science Behind Mindful Breathing and Stress Reduction", excerpt: "Discover how pranayama and conscious breathwork activate the parasympathetic nervous system, reducing cortisol and promoting deep calm.", category: "Breathwork", readTime: "8 min", author: "Dr. Arjun Mehta", date: "May 12, 2025", img: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&h=400&fit=crop", featured: true, tags: ["science", "stress"] },
-  { id: 3, title: "Ayurvedic Nutrition: Eating for Your Dosha Type", excerpt: "Learn how to identify your Ayurvedic constitution and choose foods that bring balance, energy, and vitality to your unique body type.", category: "Nutrition", readTime: "10 min", author: "Mei Lin", date: "May 8, 2025", img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&h=400&fit=crop", featured: false, tags: ["ayurveda", "diet"] },
-  { id: 4, title: "How to Build a Sustainable 20-Minute Daily Yoga Practice", excerpt: "Consistency over perfection. Here's how to build a realistic daily yoga habit that fits your life and delivers real transformation.", category: "Yoga", readTime: "5 min", author: "Sofia Alvarez", date: "May 3, 2025", img: "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?w=600&h=400&fit=crop", featured: false, tags: ["habit", "practice"] },
-  { id: 5, title: "The Best Wellness Retreats in Bali for 2025", excerpt: "Our curated guide to the most transformative wellness retreats across Bali — from silent meditation immersions to dynamic yoga intensives.", category: "Retreats", readTime: "12 min", author: "James Okonkwo", date: "Apr 28, 2025", img: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=600&h=400&fit=crop", featured: false, tags: ["travel", "bali"] },
-  { id: 6, title: "Sleep Better with These 5 Evening Meditation Techniques", excerpt: "Struggling with sleep? These five gentle evening meditation practices will calm your nervous system and guide you into deep, restorative rest.", category: "Meditation", readTime: "7 min", author: "Anika Sharma", date: "Apr 22, 2025", img: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&h=400&fit=crop", featured: false, tags: ["sleep", "evening"] },
-];
+import { Link } from "react-router-dom";
+import { posts } from "@/data/blogPosts";
 
 export default function Blog() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [search, setSearch] = useState("");
-  useIntersectionObserver();
+  useIntersectionObserver(0.15, [activeCategory, search]);
 
   const filtered = posts.filter(p =>
     (activeCategory.toLowerCase() === "all" || p.category.toLowerCase() === activeCategory.toLowerCase()) &&
@@ -66,7 +60,7 @@ export default function Blog() {
           {featured.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
               {featured.map((post, i) => (
-                <div key={post.id} className="group rounded-3xl bg-card border border-border overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer section-fade" style={{ transitionDelay: `${i * 80}ms` }}>
+                <Link to={`/blog/${post.id}`} key={post.id} className="group rounded-3xl bg-card border border-border overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer section-fade block" style={{ transitionDelay: `${i * 80}ms` }}>
                   <div className="relative h-52 overflow-hidden">
                     <img src={post.img} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -84,7 +78,7 @@ export default function Blog() {
                       <span>{post.date}</span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -92,7 +86,7 @@ export default function Blog() {
           {/* All Posts */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {rest.map((post, i) => (
-              <div key={post.id} className="group rounded-3xl bg-card border border-border overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer section-fade" style={{ transitionDelay: `${i * 60}ms` }}>
+              <Link to={`/blog/${post.id}`} key={post.id} className="group rounded-3xl bg-card border border-border overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer section-fade block" style={{ transitionDelay: `${i * 60}ms` }}>
                 <div className="relative h-44 overflow-hidden">
                   <img src={post.img} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-white/90 dark:bg-card/90 text-xs font-semibold text-foreground">{post.category}</span>
@@ -112,7 +106,7 @@ export default function Blog() {
                     ))}
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 
